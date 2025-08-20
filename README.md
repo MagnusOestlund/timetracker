@@ -1,385 +1,310 @@
 # ⏱️ TimeTracker Pro
 
-A professional desktop time tracking application built with Python and Tkinter. Track your work hours, manage projects, and generate detailed reports with automatic backup and data export capabilities.
-
-![TimeTracker Pro](https://img.shields.io/badge/version-1.0-blue) ![Python](https://img.shields.io/badge/python-3.7+-green) ![License](https://img.shields.io/badge/license-MIT-blue) ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
+A professional time tracking application built with Python and Tkinter, designed for freelancers, consultants, and professionals who need to track time spent on projects and generate detailed reports.
 
 ## 🚀 Features
 
-### ⏲️ **Core Time Tracking**
-- **Start/Stop/Pause Timer** - Full control over your time tracking sessions
-- **Project Management** - Track time for different projects with custom names
-- **Memo/Notes** - Add detailed notes about what you were working on
-- **Real-time Display** - Live elapsed time counter with HH:MM:SS format
-- **Session Management** - Pause and resume functionality for interruptions
+### **Core Time Tracking**
+- **Start/Stop/Pause Timer** - Simple timer controls with pause/resume functionality
+- **Project Management** - Create, edit, and manage multiple projects with status tracking
+- **Notes & Descriptions** - Add detailed notes for each time entry
+- **Automatic Duration Calculation** - Precise time tracking with HH:MM:SS format
 
-### 🎨 **Modern Professional UI**
-- **Menu Bar Navigation** - Organized File, View, Tools, and Help menus
-- **Quick Actions Panel** - Easy access to frequently used functions
-- **Card-Based Layout** - Modern, clean interface with visual hierarchy
-- **Professional Color Scheme** - Indigo, emerald, and amber accent colors
-- **Hover Effects** - Interactive buttons with smooth color transitions
-- **Always-on-Top Option** - Keep the window visible while working
+### **Advanced Project Management**
+- **Project Status** - Active/Inactive project management
+- **Invoice Flags** - Mark projects as billable or non-billable
+- **Project Descriptions** - Detailed project information and notes
+- **Project Selection** - Easy switching between multiple projects
 
-### 📊 **Reports & Analytics**
-- **Summary Reports** - Total time, entry counts, and project breakdowns
-- **Weekly Analysis** - Last 4 weeks of time tracking data
-- **Top Projects** - See which projects consume the most time
-- **Detailed Statistics** - Hours worked, entries logged, and performance metrics
-- **Export Reports** - Save analytics data to CSV format
+### **Invoice & Billing Features**
+- **Invoice Rates** - Set hourly rates per project with currency support
+- **Invoiced Status Tracking** - Mark time entries as invoiced or pending
+- **Bulk Operations** - Select multiple entries for bulk status updates
+- **Export for Billing** - Generate CSV reports for client invoicing
 
-### 💾 **Data Management**
-- **Automatic Backup** - Configurable auto-backup with retention policy
-- **Manual Backup** - On-demand backup creation with timestamps
-- **Data Recovery** - Restore from any backup with pre-restore safety backups
-- **CSV Export/Import** - Full data portability and integration capabilities
-- **JSON Storage** - Human-readable data format for easy access
+### **Data Management & Reports**
+- **Time Entries View** - Comprehensive list with filtering and editing
+- **Date Range Filtering** - Filter entries by specific date ranges
+- **Status Filtering** - Filter by invoiced status (All/Invoiced/Not Invoiced)
+- **Multiple Selection** - Select multiple entries for bulk operations
+- **CSV Import/Export** - Import existing data or export for analysis
 
-### ⚙️ **Advanced Features**
-- **Dedicated Settings Dialog** - Comprehensive configuration management
-- **About Dialog** - Application information and feature overview
-- **Data Validation** - Input validation and error handling
-- **Edit Entries** - Modify existing time entries with full validation
-- **Delete Entries** - Remove unwanted entries with confirmation dialogs
-- **Status Updates** - Real-time feedback with icons and color coding
-- **Professional Typography** - Segoe UI font family for Windows consistency
+### **Analytics & Reporting**
+- **Summary Reports** - Overview of total time, projects, and invoicing status
+- **Weekly Breakdown** - Time tracking analysis by week
+- **Invoicing Reports** - Detailed breakdown of billable vs. non-billable time
+- **Project Analytics** - Time distribution across projects
+- **Filtered Reports** - Date-specific analytics and insights
 
-## 📋 Requirements
+### **Data Security & Backup**
+- **Automatic Backups** - Configurable auto-backup system
+- **Manual Backups** - Create backups on demand
+- **Backup Restoration** - Restore data from previous backups
+- **Data Validation** - Comprehensive error checking and validation
 
-- **Python 3.7+** (with tkinter support)
-- **Windows 10/11** (primary platform)
-- **~10MB disk space** for application and data
-- **Minimal RAM usage** (~50MB when running)
+### **Modern User Interface**
+- **Professional Design** - Modern color palette and typography
+- **Responsive Layout** - Scrollable interface for all content areas
+- **Intuitive Navigation** - Menu-based organization with quick access
+- **Date Picker Widgets** - User-friendly calendar selection for date filtering
+- **Hover Effects** - Interactive buttons with visual feedback
 
 ## 🛠️ Installation
 
-### Option 1: Download Pre-built Executable (Recommended)
-```bash
-# Visit the releases page and download the latest version
-# https://github.com/MagnusOestlund/timetracker/releases
+### **Option 1: Download Pre-built Executable (Recommended)**
 
-1. Go to the GitHub releases page
-2. Download "TimeTracker-Pro-Windows.zip"
-3. Extract the zip file to any folder
-4. Run "TimeTracker-Pro.exe"
-```
+1. **Download the latest release** from [GitHub Releases](https://github.com/MagnusOestlund/timetracker/releases)
+2. **Extract the ZIP file** to your desired location
+3. **Run `Run-TimeTracker.bat`** (Windows) to start the application
+4. **No Python installation required!**
 
-### Option 2: Run from Source
+### **Option 2: Run from Source**
+
+#### **Prerequisites**
+- Python 3.7 or higher
+- Tkinter (usually included with Python)
+
+#### **Installation Steps**
 ```bash
 # Clone the repository
 git clone https://github.com/MagnusOestlund/timetracker.git
 cd timetracker
 
+# Install dependencies (if any)
+pip install -r requirements.txt
+
 # Run the application
 python main.py
 ```
 
-### Option 3: Build Executable Yourself
-```bash
-# Install PyInstaller
-pip install pyinstaller
-
-# Run the automated build script
-build.bat
-# OR
-.\build.ps1
-
-# Find your executable in the dist/ folder
-```
-
-## 🎯 Quick Start
-
-1. **Launch the application** by running `main.py` or the executable
-2. **Enter a project name** in the "Project Details" section
-3. **Add notes** (optional) in the description field
-4. **Click "▶ Start"** to begin tracking time
-5. **Use "⏸ Pause"** to temporarily stop without ending the session
-6. **Click "⏹ Stop"** when finished to save the entry
-
 ## 📖 User Guide
 
-### Navigation
-The application features a **professional menu bar** with organized sections:
-- **📁 File**: Export/Import data, create/restore backups, exit
-- **👁️ View**: Access time entries and reports
-- **🛠️ Tools**: Data management and settings
-- **❓ Help**: About dialog with application information
+### **Getting Started**
+1. **Launch the application** - The main window will open with project selection
+2. **Select or create a project** - Choose from existing projects or create a new one
+3. **Add project details** - Enter project name, status, and description
+4. **Start tracking time** - Click "▶ Start" to begin timing
+5. **Add notes** - Use the memo field to describe what you're working on
+6. **Stop when done** - Click "⏹ Stop" to end the session
 
-### Quick Actions Panel
-The main interface includes a **Quick Actions** section with:
-- **📋 View Entries**: See and edit your time tracking history
-- **📊 Reports**: Generate analytics and export reports
-- **📁 Data Tools**: Import/export and backup management
-- **⚙️ Settings**: Configure application preferences
-- **💾 Quick Backup**: Create instant data backups
-- **❓ Help**: Access application information
+### **Project Management**
+- **Create Projects**: Tools → Project Management → Add Project
+- **Set Status**: Mark projects as Active or Inactive
+- **Invoice Flags**: Set whether projects should be invoiced
+- **Edit Projects**: Modify existing project details
+- **Delete Projects**: Remove unused projects (with confirmation)
 
-### Starting a Time Tracking Session
-1. Enter your project name in the **Project Details** card (required)
-2. Add optional notes about your work in the description field
-3. Click the **▶ Start** button in the Timer Controls
-4. The timer will begin counting and display elapsed time
+### **Invoice Rates**
+- **Set Hourly Rates**: Tools → Invoice Rates → Add Rate
+- **Currency Support**: USD, EUR, GBP, SEK, NOK, DKK
+- **Project-Specific Rates**: Different rates for different projects
+- **Rate Management**: Edit or delete rates as needed
 
-### Managing Active Sessions
-- **⏸ Pause**: Temporarily stop the timer without ending the session
-- **▶ Resume**: Continue timing from where you paused
-- **⏹ Stop**: End the session and save the entry to your data file
+### **Time Entry Management**
+- **View Entries**: View → Time Entries
+- **Date Filtering**: Use From/To date pickers to filter entries
+- **Status Filtering**: Filter by invoiced status
+- **Multiple Selection**: Ctrl+Click or Shift+Click to select multiple entries
+- **Bulk Operations**: Edit, delete, or toggle invoiced status for multiple entries
 
-### Viewing and Editing Entries
-1. Use **📋 View Entries** from Quick Actions or View menu
-2. Select any entry from the modern list interface
-3. Click **✏️ Edit Selected** to modify details
-4. Update project names, times, durations, or memos
-5. Changes are validated and saved automatically
+### **Reports & Analytics**
+- **Summary Reports**: View → Reports & Analytics → Summary tab
+- **Weekly Breakdown**: View → Reports & Analytics → Weekly tab
+- **Invoicing Reports**: View → Reports & Analytics → Invoicing tab
+- **Date Filtering**: Apply date ranges to reports
+- **Export Reports**: Download filtered data as CSV
 
-### Generating Reports
-1. Click **📊 Reports** from Quick Actions or View menu
-2. View the **📈 Summary** tab for overall statistics
-3. Check the **📅 Weekly** tab for recent activity breakdown
-4. Use **📁 Export Report** to save analytics data to CSV
+### **Data Management**
+- **Import CSV**: File → Import from CSV
+- **Export CSV**: File → Export to CSV
+- **Create Backups**: File → Create Backup or Tools → Settings
+- **Restore Backups**: File → Restore from Backup
+- **Auto-Backup**: Configure automatic backup frequency
 
-### Data Management
-Access through **📁 Data Tools** or the File menu:
-1. **📤 Export to CSV**: Save your data in spreadsheet format
-2. **📥 Import from CSV**: Add data from external sources
-3. **💾 Create Backup**: Manual backup of your current data
-4. **🔄 Restore from Backup**: Recover from previous backups
+## ⚙️ Settings & Configuration
 
-### Settings & Configuration
-Access via **⚙️ Settings** button or Tools menu:
-- **Keep window on top**: Toggle always-on-top behavior
-- **Automatically create backups**: Enable/disable automatic backups
-- **Manual Backup**: Create backups on-demand
-- Settings are saved automatically and persist between sessions
+### **Application Settings**
+- **Always on Top**: Keep window above other applications
+- **Auto-Backup**: Automatically create backups when saving
+- **Backup Retention**: Keep last 10 backup files
+- **Theme**: Choose application appearance
 
-## 📁 File Structure
+### **Data Files**
+- **work_hours.json**: Time tracking data
+- **projects.json**: Project management data
+- **invoice_rates.json**: Billing rates and currencies
+- **config.json**: Application configuration
+- **backups/**: Backup file directory
 
+## 🧪 Testing
+
+The application includes a comprehensive test suite with **43 tests** covering:
+
+- **Core Functionality**: Timer operations, data management
+- **UI Components**: Menu creation, button functionality
+- **Data Validation**: Date parsing, time format validation
+- **Project Management**: CRUD operations, status tracking
+- **Date Filtering**: Range validation, error handling
+- **Invoiced Status**: Toggle functionality, multiple selection
+- **Error Handling**: Edge cases, invalid input handling
+
+### **Run Tests**
+```bash
+# Run all tests
+python -m unittest test_timetracker.py -v
+
+# Run specific test class
+python -m unittest test_timetracker.TestTimeTracker -v
 ```
-TimeTracker/
-├── main.py                 # Main application file
-├── config.json            # Application configuration (auto-created)
-├── work_hours.json        # Time tracking data (auto-created)
-├── backups/               # Automatic and manual backups
-│   ├── backup_YYYYMMDD_HHMMSS.json
-│   └── manual_backup_YYYYMMDD_HHMMSS.json
-├── test_timetracker.py    # Comprehensive test suite
-├── build.bat              # Windows build script
-├── build.ps1              # PowerShell build script
-├── run_tests.bat          # Test runner (Windows)
-├── run_tests.ps1          # Test runner (PowerShell)
-├── requirements.txt       # Dependencies documentation
-├── TESTING_GUIDE.md       # Testing instructions
-├── manual_build.md        # Manual build guide
-└── README.md             # This file
-```
+
+## 🎨 Modern UI Design
+
+### **Color Palette**
+- **Primary**: Indigo (#4F46E5) - Main actions and highlights
+- **Secondary**: Emerald (#10B981) - Success states and confirmations
+- **Accent**: Amber (#F59E0B) - Warnings and special actions
+- **Danger**: Red (#EF4444) - Destructive actions
+- **Background**: Light gray (#FAFBFC) - Clean, professional appearance
+
+### **Typography**
+- **Title**: Segoe UI 16pt Bold - Main headings
+- **Heading**: Segoe UI 12pt Bold - Section headers
+- **Body**: Segoe UI 11pt - Regular text
+- **Button**: Segoe UI 10pt Bold - Action buttons
+- **Small**: Segoe UI 9pt - Secondary information
+
+### **Layout Features**
+- **Card-based Design**: Clean, organized content sections
+- **Responsive Scrolling**: All content areas are scrollable
+- **Hover Effects**: Interactive feedback on buttons
+- **Consistent Spacing**: Professional padding and margins
+- **Modern Icons**: Emoji-based visual indicators
 
 ## 🔧 Development
 
-### Running Tests
-```bash
-# Run all tests
-python test_timetracker.py
-
-# Or use the test runners
-run_tests.bat        # Windows
-.\run_tests.ps1      # PowerShell
-
-# Run specific test categories
-python -m unittest test_timetracker.TestTimeTracker -v
-python -m unittest test_timetracker.TestTimeTrackerIntegration -v
+### **Project Structure**
+```
+timetracker/
+├── main.py                 # Main application file
+├── test_timetracker.py     # Comprehensive test suite
+├── README.md              # This documentation
+├── requirements.txt       # Python dependencies
+├── .github/              # GitHub Actions workflows
+│   └── workflows/
+│       └── build-release.yml
+└── data/                 # Application data files
+    ├── work_hours.json
+    ├── projects.json
+    ├── invoice_rates.json
+    └── config.json
 ```
 
-### Test Coverage
-- **28 comprehensive tests** covering all functionality
-- **Unit tests** for individual components and UI elements
-- **Integration tests** for complete workflows
-- **Performance tests** for large datasets
-- **Edge case handling** and error conditions
-- **UI structure validation** for menu bar and quick actions
+### **Key Classes**
+- **`TimeTrackerApp`**: Main application class with UI and logic
+- **`DatePicker`**: Custom date selection widget with calendar popup
+- **Test Classes**: Comprehensive testing for all functionality
 
-### Building Executables
-The application includes automated build scripts that handle:
-- **Multiple build methods** (PyInstaller, cx_Freeze)
-- **SSL certificate issues** in corporate environments
-- **Fallback options** if primary tools fail
-- **Clean output** with success/failure reporting
-- **Automated GitHub releases** with pre-built executables
+### **Building Executables**
+The project includes automated build workflows:
 
-## 📊 Data Format
+1. **GitHub Actions**: Automatic builds on releases
+2. **Manual Build Script**: `manual_build_release.py` for local builds
+3. **Multiple Build Tools**: PyInstaller and cx_Freeze support
 
-### Time Entry Structure
-```json
-{
-  "project": "Project Name",
-  "memo": "Description of work done",
-  "start_time": "2024-01-15 09:00:00",
-  "stop_time": "2024-01-15 10:30:00",
-  "duration": "01:30:00",
-  "duration_seconds": 5400
-}
-```
+## 🚀 Recent Updates
 
-### Configuration Structure
-```json
-{
-  "always_on_top": true,
-  "auto_backup": true,
-  "backup_interval_days": 7,
-  "theme": "default"
-}
-```
+### **Version 1.0 - Current Release**
+- ✅ **Date Filtering System** - Comprehensive date range filtering for entries and reports
+- ✅ **DatePicker Widget** - User-friendly calendar popup for date selection
+- ✅ **Enhanced Reports** - Filtered reports with date-specific analytics
+- ✅ **Multiple Selection** - Bulk operations for time entries
+- ✅ **Invoiced Status Toggle** - Smart toggle between Yes/No states
+- ✅ **Scrollbar Improvements** - Fixed scrollbar conflicts and mousewheel handling
+- ✅ **Comprehensive Testing** - 43 tests covering all major functionality
+- ✅ **Error Handling** - Robust error handling and user feedback
+- ✅ **Modern UI** - Professional appearance with hover effects
 
-## 🛡️ Data Safety
-
-### Automatic Backups
-- **Triggered** on every data save operation
-- **Retention** policy keeps last 10 backups
-- **Timestamped** files for easy identification
-- **Configurable** via settings dialog
-
-### Manual Backups
-- **On-demand** backup creation via Quick Actions or File menu
-- **Timestamped** with "manual_backup_" prefix
-- **No automatic cleanup** - retained indefinitely
-- **Status feedback** confirms successful creation
-
-### Data Recovery
-- **Restore from any backup** with modern file selection dialog
-- **Pre-restore backup** created automatically for safety
-- **Validation** ensures data integrity during restore
-- **Confirmation dialogs** prevent accidental data loss
-
-## 🎨 Customization
-
-### Modern UI Design
-The application features a professional color scheme:
-- **Background Primary**: Light gray (`#FAFBFC`)
-- **Background Secondary**: Off-white (`#F8F9FA`)
-- **Card Background**: Pure white (`#FFFFFF`)
-- **Primary**: Indigo (`#4F46E5`)
-- **Secondary**: Emerald (`#10B981`)
-- **Accent**: Amber (`#F59E0B`)
-- **Danger**: Red (`#EF4444`)
-- **Text Primary**: Dark gray (`#111827`)
-
-### Typography
-- **Title**: Segoe UI 16pt Bold
-- **Heading**: Segoe UI 12pt Bold
-- **Body**: Segoe UI 11pt
-- **Button**: Segoe UI 10pt Bold
-- **Timer**: Segoe UI 14pt Bold
-
-### Extending Functionality
-The modular design makes it easy to add:
-- **New report types** in the `show_reports()` method
-- **Additional export formats** by extending export methods
-- **Custom validation** in the `validate_time_format()` method
-- **New configuration options** in the settings dialog
-- **Additional UI cards** using the `create_card_frame()` method
+### **Previous Major Features**
+- **Project Management System** - Full CRUD operations for projects
+- **Invoice Rates Management** - Hourly rates with currency support
+- **Data Import/Export** - CSV support for data migration
+- **Automatic Backups** - Configurable backup system
+- **Modern Interface** - Professional design overhaul
 
 ## 🐛 Troubleshooting
 
-### Common Issues
+### **Common Issues**
 
 #### **Application Won't Start**
-- **Pre-built executable**: Ensure you have Windows 10/11 and extracted the full zip
-- **From source**: Verify Python 3.7+ is installed
-- **Check tkinter**: `python -c "import tkinter"`
-- **Ensure correct directory**: Navigate to the application folder
-
-#### **Timer Not Working**
-- Verify project name is entered (required field)
-- Check for error messages in the status bar (⚠️ prefix)
-- Restart the application if timer appears stuck
+- Ensure Python 3.7+ is installed
+- Check that Tkinter is available
+- Verify all required files are present
 
 #### **Data Not Saving**
 - Check file permissions in the application directory
 - Verify disk space is available
-- Look for error messages in the status bar
+- Check for antivirus interference
 
-#### **Download Issues**
-- **Slow download**: GitHub releases are hosted on CDN, try again later
-- **Blocked download**: Some antivirus software may flag new executables
-- **Extraction problems**: Use Windows built-in zip extraction or 7-Zip
+#### **Date Filtering Errors**
+- Ensure dates are in YYYY-MM-DD format
+- Check that "From" date is before "To" date
+- Clear filters and try again
 
-### Getting Help
-1. Check the **status bar** for error messages (⚠️ icon)
-2. Use the **❓ Help** button or menu for application information
-3. Review the **TESTING_GUIDE.md** for detailed troubleshooting
-4. Run the **test suite** to verify functionality (source version)
-5. Check **file permissions** and disk space
-6. **Report issues** on the GitHub repository
+#### **Scrollbar Issues**
+- Restart the application
+- Check for multiple instances running
+- Clear application cache if needed
 
-## 📈 Performance
+### **Error Messages**
+- **⚠️ Warning**: Non-critical issues with helpful guidance
+- **✓ Success**: Confirmation of successful operations
+- **❌ Error**: Critical errors requiring attention
 
-### Benchmarks
-- **Startup time**: <2 seconds
-- **Data loading**: 1000+ entries in <1 second
-- **Memory usage**: ~50MB typical, ~100MB with large datasets
-- **File operations**: Efficient JSON handling with compression
-- **UI responsiveness**: Real-time updates with minimal CPU usage
+### **Getting Help**
+1. **Check the logs** - Error messages provide specific guidance
+2. **Review this README** - Comprehensive documentation
+3. **Run tests** - Verify functionality with test suite
+4. **GitHub Issues** - Report bugs or request features
 
-### Scalability
-- **Tested with 1000+ entries** without performance degradation
-- **Efficient data structures** for fast searching and filtering
-- **Lazy loading** for large datasets in reports
-- **Automatic cleanup** of old backup files
+## 📊 Test Coverage
 
-## 🔒 Security
+The application includes **43 comprehensive tests** covering:
 
-### Data Protection
-- **Local storage only** - no cloud or network transmission
-- **File permissions** respect system security settings
-- **Backup encryption** (manual process if required)
-- **No sensitive data collection** - only project time tracking
+- **Core Functionality**: 15 tests
+- **UI Components**: 8 tests  
+- **Data Management**: 10 tests
+- **Project Management**: 5 tests
+- **Date Handling**: 5 tests
 
-### Privacy
-- **No telemetry** or usage tracking
-- **No internet connectivity** required
-- **Offline operation** for complete privacy
-- **User-controlled data** with full export capabilities
+**Test Results**: All tests passing ✅
 
 ## 🤝 Contributing
 
-### Development Setup
-1. **Fork** the repository
-2. **Clone** your fork locally
-3. **Run tests** to verify setup: `python test_timetracker.py`
-4. **Make changes** with appropriate test coverage
-5. **Submit pull request** with clear description
+### **How to Contribute**
+1. **Fork the repository**
+2. **Create a feature branch**
+3. **Make your changes**
+4. **Add tests for new functionality**
+5. **Submit a pull request**
 
-### Code Style
-- **PEP 8** compliance for Python code
-- **Descriptive variable names** and function documentation
-- **Comprehensive error handling** with user-friendly messages
-- **Test coverage** for new functionality
-- **Modern UI patterns** following the established design system
+### **Development Guidelines**
+- **Follow PEP 8** - Python style guidelines
+- **Add tests** - New features require test coverage
+- **Update documentation** - Keep README current
+- **Test thoroughly** - Ensure all functionality works
 
-## 📜 License
+## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is open source and available under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- **Python Software Foundation** for the excellent Python language
-- **Tkinter team** for the robust GUI framework
-- **Contributors** who help improve the application
-- **Users** who provide feedback and feature requests
-
-## 📞 Support
-
-### Documentation
-- **README.md** - This comprehensive guide
-- **TESTING_GUIDE.md** - Detailed testing instructions
-- **manual_build.md** - Step-by-step build process
-
-### Community
-- **Issues**: Report bugs or request features via GitHub issues
-- **Discussions**: Share usage tips and get help from the community
-- **Pull Requests**: Contribute improvements and new features
+- **Python Community** - For the excellent Tkinter framework
+- **Open Source Contributors** - For inspiration and best practices
+- **Testing Community** - For comprehensive testing methodologies
 
 ---
 
-**TimeTracker Pro** - Professional time tracking made simple. Track your productivity, analyze your work patterns, and take control of your time management with this powerful, privacy-focused desktop application featuring a modern, intuitive interface.
+**TimeTracker Pro** - Professional time tracking made simple! ⏱️✨
 
 *Built with ❤️ using Python and Tkinter*
