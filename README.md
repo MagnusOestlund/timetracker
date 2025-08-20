@@ -13,11 +13,20 @@ A professional desktop time tracking application built with Python and Tkinter. 
 - **Real-time Display** - Live elapsed time counter with HH:MM:SS format
 - **Session Management** - Pause and resume functionality for interruptions
 
+### 🎨 **Modern Professional UI**
+- **Menu Bar Navigation** - Organized File, View, Tools, and Help menus
+- **Quick Actions Panel** - Easy access to frequently used functions
+- **Card-Based Layout** - Modern, clean interface with visual hierarchy
+- **Professional Color Scheme** - Indigo, emerald, and amber accent colors
+- **Hover Effects** - Interactive buttons with smooth color transitions
+- **Always-on-Top Option** - Keep the window visible while working
+
 ### 📊 **Reports & Analytics**
 - **Summary Reports** - Total time, entry counts, and project breakdowns
 - **Weekly Analysis** - Last 4 weeks of time tracking data
 - **Top Projects** - See which projects consume the most time
 - **Detailed Statistics** - Hours worked, entries logged, and performance metrics
+- **Export Reports** - Save analytics data to CSV format
 
 ### 💾 **Data Management**
 - **Automatic Backup** - Configurable auto-backup with retention policy
@@ -27,12 +36,13 @@ A professional desktop time tracking application built with Python and Tkinter. 
 - **JSON Storage** - Human-readable data format for easy access
 
 ### ⚙️ **Advanced Features**
-- **Always-on-Top** - Keep the window visible while working
+- **Dedicated Settings Dialog** - Comprehensive configuration management
+- **About Dialog** - Application information and feature overview
 - **Data Validation** - Input validation and error handling
 - **Edit Entries** - Modify existing time entries with full validation
 - **Delete Entries** - Remove unwanted entries with confirmation dialogs
-- **Status Updates** - Real-time feedback on all operations
-- **Professional UI** - Modern, clean interface with intuitive controls
+- **Status Updates** - Real-time feedback with icons and color coding
+- **Professional Typography** - Segoe UI font family for Windows consistency
 
 ## 📋 Requirements
 
@@ -45,9 +55,9 @@ A professional desktop time tracking application built with Python and Tkinter. 
 
 ### Option 1: Run from Source
 ```bash
-# Clone or download the repository
-git clone https://github.com/yourusername/timetracker-pro.git
-cd timetracker-pro
+# Clone the repository
+git clone https://github.com/MagnusOestlund/timetracker.git
+cd timetracker
 
 # Run the application
 python main.py
@@ -69,47 +79,65 @@ build.bat
 ## 🎯 Quick Start
 
 1. **Launch the application** by running `main.py` or the executable
-2. **Enter a project name** in the "Project Name" field
-3. **Add notes** (optional) about what you're working on
-4. **Click "▶ Start Timer"** to begin tracking time
+2. **Enter a project name** in the "Project Details" section
+3. **Add notes** (optional) in the description field
+4. **Click "▶ Start"** to begin tracking time
 5. **Use "⏸ Pause"** to temporarily stop without ending the session
-6. **Click "■ Stop Timer"** when finished to save the entry
+6. **Click "⏹ Stop"** when finished to save the entry
 
 ## 📖 User Guide
 
+### Navigation
+The application features a **professional menu bar** with organized sections:
+- **📁 File**: Export/Import data, create/restore backups, exit
+- **👁️ View**: Access time entries and reports
+- **🛠️ Tools**: Data management and settings
+- **❓ Help**: About dialog with application information
+
+### Quick Actions Panel
+The main interface includes a **Quick Actions** section with:
+- **📋 View Entries**: See and edit your time tracking history
+- **📊 Reports**: Generate analytics and export reports
+- **📁 Data Tools**: Import/export and backup management
+- **⚙️ Settings**: Configure application preferences
+- **💾 Quick Backup**: Create instant data backups
+- **❓ Help**: Access application information
+
 ### Starting a Time Tracking Session
-1. Enter your project name (required)
-2. Add optional memo/notes about your work
-3. Click the **Start Timer** button
+1. Enter your project name in the **Project Details** card (required)
+2. Add optional notes about your work in the description field
+3. Click the **▶ Start** button in the Timer Controls
 4. The timer will begin counting and display elapsed time
 
 ### Managing Active Sessions
-- **Pause**: Temporarily stop the timer without ending the session
-- **Resume**: Continue timing from where you paused
-- **Stop**: End the session and save the entry to your data file
+- **⏸ Pause**: Temporarily stop the timer without ending the session
+- **▶ Resume**: Continue timing from where you paused
+- **⏹ Stop**: End the session and save the entry to your data file
 
 ### Viewing and Editing Entries
-1. Click **"📋 View & Edit Entries"**
-2. Select any entry to **edit** or **delete**
-3. Modify project names, times, durations, or memos
-4. Changes are validated and saved automatically
+1. Use **📋 View Entries** from Quick Actions or View menu
+2. Select any entry from the modern list interface
+3. Click **✏️ Edit Selected** to modify details
+4. Update project names, times, durations, or memos
+5. Changes are validated and saved automatically
 
 ### Generating Reports
-1. Click **"📊 Reports"** to open the analytics window
-2. View the **Summary** tab for overall statistics
-3. Check the **Weekly** tab for recent activity breakdown
-4. Export reports to CSV for external analysis
+1. Click **📊 Reports** from Quick Actions or View menu
+2. View the **📈 Summary** tab for overall statistics
+3. Check the **📅 Weekly** tab for recent activity breakdown
+4. Use **📁 Export Report** to save analytics data to CSV
 
 ### Data Management
-1. Click **"📁 Import/Export"** for data management options
-2. **Export to CSV**: Save your data in spreadsheet format
-3. **Import from CSV**: Add data from external sources
-4. **Create Backup**: Manual backup of your current data
-5. **Restore from Backup**: Recover from previous backups
+Access through **📁 Data Tools** or the File menu:
+1. **📤 Export to CSV**: Save your data in spreadsheet format
+2. **📥 Import from CSV**: Add data from external sources
+3. **💾 Create Backup**: Manual backup of your current data
+4. **🔄 Restore from Backup**: Recover from previous backups
 
-### Configuration
+### Settings & Configuration
+Access via **⚙️ Settings** button or Tools menu:
 - **Keep window on top**: Toggle always-on-top behavior
-- **Auto-backup data**: Enable/disable automatic backups
+- **Automatically create backups**: Enable/disable automatic backups
 - **Manual Backup**: Create backups on-demand
 - Settings are saved automatically and persist between sessions
 
@@ -151,11 +179,12 @@ python -m unittest test_timetracker.TestTimeTrackerIntegration -v
 ```
 
 ### Test Coverage
-- **24 comprehensive tests** covering all functionality
-- **Unit tests** for individual components
+- **28 comprehensive tests** covering all functionality
+- **Unit tests** for individual components and UI elements
 - **Integration tests** for complete workflows
 - **Performance tests** for large datasets
 - **Edge case handling** and error conditions
+- **UI structure validation** for menu bar and quick actions
 
 ### Building Executables
 The application includes automated build scripts that handle:
@@ -194,37 +223,47 @@ The application includes automated build scripts that handle:
 - **Triggered** on every data save operation
 - **Retention** policy keeps last 10 backups
 - **Timestamped** files for easy identification
-- **Configurable** via settings toggle
+- **Configurable** via settings dialog
 
 ### Manual Backups
-- **On-demand** backup creation
+- **On-demand** backup creation via Quick Actions or File menu
 - **Timestamped** with "manual_backup_" prefix
 - **No automatic cleanup** - retained indefinitely
 - **Status feedback** confirms successful creation
 
 ### Data Recovery
-- **Restore from any backup** with file selection dialog
+- **Restore from any backup** with modern file selection dialog
 - **Pre-restore backup** created automatically for safety
 - **Validation** ensures data integrity during restore
 - **Confirmation dialogs** prevent accidental data loss
 
 ## 🎨 Customization
 
-### UI Themes
-The application uses a modern color scheme:
-- **Background**: Light gray (`#F9FAFB`)
-- **Primary**: Blue (`#2563EB`)
-- **Accent**: Dark blue (`#1E3A8A`)
-- **Text**: Dark gray (`#111827`)
-- **Success**: Green (`#059669`)
-- **Error**: Red (`#DC2626`)
+### Modern UI Design
+The application features a professional color scheme:
+- **Background Primary**: Light gray (`#FAFBFC`)
+- **Background Secondary**: Off-white (`#F8F9FA`)
+- **Card Background**: Pure white (`#FFFFFF`)
+- **Primary**: Indigo (`#4F46E5`)
+- **Secondary**: Emerald (`#10B981`)
+- **Accent**: Amber (`#F59E0B`)
+- **Danger**: Red (`#EF4444`)
+- **Text Primary**: Dark gray (`#111827`)
+
+### Typography
+- **Title**: Segoe UI 16pt Bold
+- **Heading**: Segoe UI 12pt Bold
+- **Body**: Segoe UI 11pt
+- **Button**: Segoe UI 10pt Bold
+- **Timer**: Segoe UI 14pt Bold
 
 ### Extending Functionality
 The modular design makes it easy to add:
 - **New report types** in the `show_reports()` method
 - **Additional export formats** by extending export methods
 - **Custom validation** in the `validate_time_format()` method
-- **New configuration options** in the config management section
+- **New configuration options** in the settings dialog
+- **Additional UI cards** using the `create_card_frame()` method
 
 ## 🐛 Troubleshooting
 
@@ -237,7 +276,7 @@ The modular design makes it easy to add:
 
 #### **Timer Not Working**
 - Verify project name is entered (required field)
-- Check for error messages in the status bar
+- Check for error messages in the status bar (⚠️ prefix)
 - Restart the application if timer appears stuck
 
 #### **Data Not Saving**
@@ -251,10 +290,11 @@ The modular design makes it easy to add:
 - Try alternative build methods (cx_Freeze if PyInstaller fails)
 
 ### Getting Help
-1. Check the **status bar** for error messages
-2. Review the **TESTING_GUIDE.md** for detailed troubleshooting
-3. Run the **test suite** to verify functionality
-4. Check **file permissions** and disk space
+1. Check the **status bar** for error messages (⚠️ icon)
+2. Use the **❓ Help** button or menu for application information
+3. Review the **TESTING_GUIDE.md** for detailed troubleshooting
+4. Run the **test suite** to verify functionality
+5. Check **file permissions** and disk space
 
 ## 📈 Performance
 
@@ -299,6 +339,7 @@ The modular design makes it easy to add:
 - **Descriptive variable names** and function documentation
 - **Comprehensive error handling** with user-friendly messages
 - **Test coverage** for new functionality
+- **Modern UI patterns** following the established design system
 
 ## 📜 License
 
@@ -325,6 +366,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**TimeTracker Pro** - Professional time tracking made simple. Track your productivity, analyze your work patterns, and take control of your time management with this powerful, privacy-focused desktop application.
+**TimeTracker Pro** - Professional time tracking made simple. Track your productivity, analyze your work patterns, and take control of your time management with this powerful, privacy-focused desktop application featuring a modern, intuitive interface.
 
 *Built with ❤️ using Python and Tkinter* 
