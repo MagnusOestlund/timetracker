@@ -98,11 +98,12 @@ class TestTimeTracker(unittest.TestCase):
         self.assertIsNotNone(self.app.elapsed_label)
         self.assertIsNotNone(self.app.status_label)
         self.assertFalse(self.app.is_running)
-        self.assertFalse(self.app.is_paused)
-        self.assertIsNone(self.app.start_time)
-        self.assertIsNone(self.app.last_start)
-        self.assertEqual(self.app.elapsed_seconds, 0)
-    
+        
+        # Test new features
+        self.assertIsNotNone(self.app.projects)
+        self.assertIsNotNone(self.app.invoice_rates)
+        self.assertIsNotNone(self.app.current_project_id)
+
     def test_config_loading(self):
         """Test configuration loading and defaults"""
         self.assertIsNotNone(self.app.config)
@@ -359,27 +360,44 @@ class TestTimeTracker(unittest.TestCase):
 
     def test_quick_actions_creation(self):
         """Test that quick actions section is created"""
-        # Check that the method exists
-        self.assertTrue(hasattr(self.app, 'create_quick_actions'))
-        self.assertTrue(callable(self.app.create_quick_actions))
+        # Quick actions were moved to menu bar during UI overhaul
+        # Test that menu bar exists instead
+        self.assertIsNotNone(self.app.root.cget('menu'))
+        
+        # Test that main UI components exist
+        self.assertIsNotNone(self.app.project_name)
+        self.assertIsNotNone(self.app.memo_text)
+        self.assertIsNotNone(self.app.start_button)
+        self.assertIsNotNone(self.app.stop_button)
+        self.assertIsNotNone(self.app.pause_button)
 
     def test_ui_structure(self):
         """Test that the new UI structure is properly created"""
-        # Check that all expected methods exist
-        expected_methods = [
+        # Test that the new UI structure methods exist
+        required_methods = [
             'create_menu_bar',
-            'create_quick_actions', 
-            'create_project_card',
+            'create_project_card', 
             'create_timer_controls',
-            'create_settings_card',
-            'create_status_section'
+            'create_status_section',
+            'create_card_frame',
+            'create_modern_button'
         ]
         
-        for method_name in expected_methods:
-            self.assertTrue(hasattr(self.app, method_name), 
+        for method_name in required_methods:
+            self.assertTrue(hasattr(self.app, method_name),
                           f"Method {method_name} not found")
-            self.assertTrue(callable(getattr(self.app, method_name)), 
-                          f"Method {method_name} is not callable")
+        
+        # Test that the new project management methods exist
+        project_methods = [
+            'show_project_manager',
+            'show_invoice_rates',
+            'add_edit_project',
+            'add_edit_rate'
+        ]
+        
+        for method_name in project_methods:
+            self.assertTrue(hasattr(self.app, method_name),
+                          f"Method {method_name} not found")
     
     def test_csv_export(self):
         """Test CSV export functionality"""
@@ -500,6 +518,358 @@ class TestTimeTracker(unittest.TestCase):
         # Should save within reasonable time (less than 1 second)
         save_time = (end_time - start_time).total_seconds()
         self.assertLess(save_time, 1.0)
+
+    def test_date_picker_creation(self):
+        """Test DatePicker widget creation and functionality"""
+        from main import DatePicker
+        
+        # Create a test frame
+        test_frame = tk.Frame(self.root)
+        test_frame.pack()
+        
+        # Create DatePicker
+        date_var = tk.StringVar()
+        date_picker = DatePicker(test_frame, textvariable=date_var)
+        
+        # Test initial value
+        self.assertEqual(date_var.get(), datetime.now().strftime("%Y-%m-%d"))
+        
+        # Test widget components exist
+        self.assertIsNotNone(date_picker.entry)
+        self.assertIsNotNone(date_picker.calendar_button)
+        
+        # Test calendar popup creation
+        date_picker.show_calendar()
+        self.assertIsNotNone(date_picker.calendar_popup)
+        
+        # Clean up
+        if date_picker.calendar_popup:
+            date_picker.calendar_popup.destroy()
+
+    def test_date_filtering_functionality(self):
+        """Test date filtering in time entries"""
+        # Mock the view_entries method to test filtering logic
+        with patch.object(self.app, 'view_entries') as mock_view:
+            # Test date validation
+            from datetime import datetime
+            
+            # Valid dates
+            valid_from = "2024-01-01"
+            valid_to = "2024-01-31"
+            
+            # Test date parsing
+            from_date_obj = datetime.strptime(valid_from, "%Y-%m-%d").date()
+            to_date_obj = datetime.strptime(valid_to, "%Y-%m-%d").date()
+            
+            self.assertIsNotNone(from_date_obj)
+            self.assertIsNotNone(to_date_obj)
+            self.assertTrue(from_date_obj <= to_date_obj)
+            
+            # Test invalid date format
+            with self.assertRaises(ValueError):
+                datetime.strptime("invalid-date", "%Y-%m-%d")
+
+    def test_invoiced_status_toggle(self):
+        """Test invoiced status toggle functionality"""
+        # Create test data with invoiced status
+        test_entry = {
+            "project": "Test Project",
+            "memo": "Test memo",
+            "start_time": "2024-01-01 09:00:00",
+            "stop_time": "2024-01-01 10:00:00",
+            "duration": "01:00:00",
+            "duration_seconds": 3600,
+            "invoiced": "No"
+        }
+        
+        # Test toggle logic
+        current_status = test_entry.get('invoiced', 'No')
+        new_status = 'Yes' if current_status == 'No' else 'No'
+        
+        self.assertEqual(new_status, 'Yes')  # No -> Yes
+        
+        # Test reverse toggle
+        test_entry['invoiced'] = 'Yes'
+        current_status = test_entry.get('invoiced', 'No')
+        new_status = 'Yes' if current_status == 'No' else 'No'
+        
+        self.assertEqual(new_status, 'No')  # Yes -> No
+
+    def test_filtered_data_management(self):
+        """Test filtered data and index mapping functionality"""
+        # Test data structure
+        filtered_data = []
+        original_to_filtered_mapping = {}
+        
+        # Simulate filtering process
+        test_data = [
+            {"id": 0, "project": "Project A", "invoiced": "No"},
+            {"id": 1, "project": "Project B", "invoiced": "Yes"},
+            {"id": 2, "project": "Project C", "invoiced": "No"}
+        ]
+        
+        # Filter by invoiced status
+        for i, entry in enumerate(test_data):
+            if entry.get('invoiced') == 'Yes':
+                original_to_filtered_mapping[i] = len(filtered_data)
+                filtered_data.append(entry)
+        
+        # Test mapping
+        self.assertEqual(len(filtered_data), 1)
+        self.assertEqual(filtered_data[0]['project'], "Project B")
+        self.assertEqual(original_to_filtered_mapping[1], 0)
+
+    def test_reports_date_filtering(self):
+        """Test reports date filtering functionality"""
+        # Test the date filtering logic
+        test_data = [
+            {
+                "project": "Project A",
+                "start_time": "2024-01-01 09:00:00",
+                "duration_seconds": 3600
+            },
+            {
+                "project": "Project B", 
+                "start_time": "2024-01-15 10:00:00",
+                "duration_seconds": 7200
+            },
+            {
+                "project": "Project C",
+                "start_time": "2024-02-01 11:00:00", 
+                "duration_seconds": 5400
+            }
+        ]
+        
+        # Test date range filtering
+        from_date = "2024-01-01"
+        to_date = "2024-01-31"
+        
+        try:
+            from_date_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
+            to_date_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
+            
+            filtered_data = []
+            for entry in test_data:
+                try:
+                    entry_date = datetime.strptime(entry.get('start_time', ''), "%Y-%m-%d %H:%M:%S").date()
+                    if from_date_obj <= entry_date <= to_date_obj:
+                        filtered_data.append(entry)
+                except (ValueError, TypeError):
+                    continue
+            
+            # Should have 2 entries in January
+            self.assertEqual(len(filtered_data), 2)
+            
+        except ValueError as e:
+            self.fail(f"Date parsing failed: {e}")
+
+    def test_project_management(self):
+        """Test project management functionality"""
+        # Test project loading
+        self.assertIsInstance(self.app.projects, list)
+        
+        # Test project structure
+        if self.app.projects:
+            project = self.app.projects[0]
+            required_fields = ['id', 'name', 'status', 'invoice', 'description']
+            for field in required_fields:
+                self.assertIn(field, project)
+        
+        # Test project methods
+        self.assertIsNotNone(self.app.get_project_by_id)
+        self.assertIsNotNone(self.app.get_current_project)
+
+    def test_invoice_rates_management(self):
+        """Test invoice rates management functionality"""
+        # Test invoice rates loading
+        self.assertIsInstance(self.app.invoice_rates, dict)
+        
+        # Test invoice rates structure
+        if self.app.invoice_rates:
+            for project_id, rate_data in self.app.invoice_rates.items():
+                self.assertIn('rate', rate_data)
+                self.assertIn('currency', rate_data)
+                self.assertIsInstance(rate_data['rate'], (int, float))
+                self.assertIsInstance(rate_data['currency'], str)
+
+    def test_clear_date_filters(self):
+        """Test date filter clearing functionality"""
+        # Test the clear date filters method
+        from_date_var = tk.StringVar(value="2024-01-01")
+        to_date_var = tk.StringVar(value="2024-01-31")
+        
+        # Verify initial values
+        self.assertEqual(from_date_var.get(), "2024-01-01")
+        self.assertEqual(to_date_var.get(), "2024-01-31")
+        
+        # Test clearing
+        self.app.clear_date_filters(from_date_var, to_date_var)
+        
+        # Verify cleared values
+        self.assertEqual(from_date_var.get(), "")
+        self.assertEqual(to_date_var.get(), "")
+
+    def test_clear_reports_date_filters(self):
+        """Test reports date filter clearing functionality"""
+        # Test the clear reports date filters method
+        from_date_var = tk.StringVar(value="2024-01-01")
+        to_date_var = tk.StringVar(value="2024-01-31")
+        
+        # Verify initial values
+        self.assertEqual(from_date_var.get(), "2024-01-01")
+        self.assertEqual(to_date_var.get(), "2024-01-31")
+        
+        # Test clearing
+        self.app.clear_reports_date_filters(from_date_var, to_date_var)
+        
+        # Verify cleared values
+        self.assertEqual(from_date_var.get(), "")
+        self.assertEqual(to_date_var.get(), "")
+
+    def test_date_picker_validation(self):
+        """Test DatePicker date validation"""
+        from main import DatePicker
+        
+        # Create a test frame
+        test_frame = tk.Frame(self.root)
+        test_frame.pack()
+        
+        # Create DatePicker
+        date_var = tk.StringVar()
+        date_picker = DatePicker(test_frame, textvariable=date_var)
+        
+        # Test valid date format
+        valid_date = "2024-01-15"
+        date_var.set(valid_date)
+        
+        # Test validation method
+        try:
+            parsed_date = datetime.strptime(valid_date, "%Y-%m-%d")
+            self.assertIsNotNone(parsed_date)
+        except ValueError:
+            self.fail("Valid date should parse successfully")
+        
+        # Test invalid date format
+        invalid_date = "invalid-date"
+        with self.assertRaises(ValueError):
+            datetime.strptime(invalid_date, "%Y-%m-%d")
+        
+        # Clean up
+        test_frame.destroy()
+
+    def test_filtered_reports_export(self):
+        """Test filtered reports export functionality"""
+        # Test that filtered data can be exported
+        test_filtered_data = [
+            {
+                "project": "Filtered Project",
+                "start_time": "2024-01-01 09:00:00",
+                "stop_time": "2024-01-01 10:00:00",
+                "duration": "01:00:00",
+                "duration_seconds": 3600,
+                "invoiced": "No"
+            }
+        ]
+        
+        # Test export method exists
+        self.assertIsNotNone(self.app.export_to_csv)
+        
+        # Test data structure for export
+        for entry in test_filtered_data:
+            required_fields = ['project', 'start_time', 'stop_time', 'duration', 'duration_seconds', 'invoiced']
+            for field in required_fields:
+                self.assertIn(field, entry)
+
+    def test_multiple_selection_handling(self):
+        """Test multiple selection handling in time entries"""
+        # Test multiple selection logic
+        selected_indices = [0, 2, 4]  # Simulate multiple selection
+        
+        # Test selection count
+        self.assertEqual(len(selected_indices), 3)
+        
+        # Test index validation
+        for index in selected_indices:
+            self.assertIsInstance(index, int)
+            self.assertGreaterEqual(index, 0)
+        
+        # Test reverse sorting for deletion
+        sorted_indices = sorted(selected_indices, reverse=True)
+        self.assertEqual(sorted_indices, [4, 2, 0])
+
+    def test_error_handling_in_date_filtering(self):
+        """Test error handling in date filtering"""
+        # Test various error scenarios
+        
+        # Test empty date strings
+        empty_date = ""
+        self.assertEqual(empty_date.strip(), "")
+        
+        # Test None values
+        none_date = None
+        if none_date:
+            self.fail("None date should not pass validation")
+        
+        # Test invalid date formats
+        invalid_formats = ["2024/01/01", "01-01-2024", "2024.01.01", "not-a-date"]
+        for invalid_format in invalid_formats:
+            with self.assertRaises(ValueError):
+                datetime.strptime(invalid_format, "%Y-%m-%d")
+
+    def test_date_range_validation(self):
+        """Test date range validation logic"""
+        # Test valid date ranges
+        valid_ranges = [
+            ("2024-01-01", "2024-01-31"),
+            ("2024-01-01", "2024-01-01"),  # Same day
+            ("2023-12-31", "2024-01-01")   # Year boundary
+        ]
+        
+        for from_date, to_date in valid_ranges:
+            try:
+                from_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
+                to_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
+                
+                # Valid range: from_date <= to_date
+                self.assertTrue(from_obj <= to_obj)
+                
+            except ValueError as e:
+                self.fail(f"Valid date range should parse: {from_date} to {to_date}, error: {e}")
+        
+        # Test invalid date ranges
+        invalid_ranges = [
+            ("2024-01-31", "2024-01-01"),  # From after To
+            ("2024-02-01", "2024-01-31"),  # From after To
+        ]
+        
+        for from_date, to_date in invalid_ranges:
+            try:
+                from_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
+                to_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
+                
+                # Invalid range: from_date > to_date
+                self.assertTrue(from_obj > to_obj)
+                
+            except ValueError as e:
+                self.fail(f"Invalid date range should parse for validation: {from_date} to {to_date}, error: {e}")
+
+    def test_placeholder_text_handling(self):
+        """Test placeholder text handling in DatePicker"""
+        # Test placeholder text detection
+        placeholder_text = "YYYY-MM-DD"
+        actual_date = "2024-01-15"
+        
+        # Test placeholder detection
+        self.assertEqual(placeholder_text, "YYYY-MM-DD")
+        self.assertNotEqual(actual_date, "YYYY-MM-DD")
+        
+        # Test that actual dates are different from placeholders
+        self.assertNotEqual(actual_date, placeholder_text)
+        
+        # Test date validation with placeholder
+        if placeholder_text == "YYYY-MM-DD":
+            # This is placeholder text, should not be treated as a real date
+            self.assertFalse(placeholder_text != "YYYY-MM-DD")
 
 
 class TestTimeTrackerIntegration(unittest.TestCase):

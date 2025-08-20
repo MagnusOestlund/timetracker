@@ -1835,7 +1835,7 @@ class TimeTrackerApp:
         # Bind mousewheel to summary canvas
         def _on_summary_mousewheel(event):
             try:
-                if summary_canvas.winfo_exists():
+                if summary_canvas and summary_canvas.winfo_exists():
                     summary_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
@@ -1912,7 +1912,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         # Bind mousewheel to weekly canvas
         def _on_weekly_mousewheel(event):
             try:
-                if weekly_canvas.winfo_exists():
+                if weekly_canvas and weekly_canvas.winfo_exists():
                     weekly_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
@@ -1974,7 +1974,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         # Bind mousewheel to invoicing canvas
         def _on_invoicing_mousewheel(event):
             try:
-                if invoicing_canvas.winfo_exists():
+                if invoicing_canvas and invoicing_canvas.winfo_exists():
                     invoicing_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
