@@ -7,6 +7,314 @@ from datetime import datetime, timedelta
 import shutil
 from typing import List, Dict, Any
 
+class DatePicker:
+    """Custom date picker widget for better date selection"""
+    
+    def __init__(self, parent, **kwargs):
+        self.parent = parent
+        self.date_var = kwargs.get('textvariable', tk.StringVar())
+        self.width = kwargs.get('width', 12)
+        self.font = kwargs.get('font', ('Segoe UI', 11))
+        self.bg = kwargs.get('bg', '#FFFFFF')
+        self.fg = kwargs.get('fg', '#111827')
+        
+        # Current date
+        self.current_date = datetime.now()
+        self.selected_date = self.current_date
+        
+        # Create the main entry widget
+        self.entry = tk.Entry(
+            parent,
+            textvariable=self.date_var,
+            width=self.width,
+            font=self.font,
+            relief="solid",
+            bd=1,
+            bg=self.bg,
+            fg=self.fg
+        )
+        
+        # Create calendar button
+        self.calendar_button = tk.Button(
+            parent,
+            text="📅",
+            font=('Segoe UI', 10),
+            relief="flat",
+            bd=0,
+            bg=self.bg,
+            fg=self.fg,
+            cursor="hand2",
+            command=self.show_calendar
+        )
+        
+        # Calendar popup
+        self.calendar_popup = None
+        
+        # Pack widgets
+        self.entry.pack(side=tk.LEFT)
+        self.calendar_button.pack(side=tk.LEFT, padx=(2, 0))
+        
+        # Bind events
+        self.entry.bind('<FocusIn>', self.on_entry_focus)
+        self.entry.bind('<Key>', self.on_entry_key)
+        
+        # Set initial value
+        self.date_var.set(self.current_date.strftime("%Y-%m-%d"))
+    
+    def on_entry_focus(self, event):
+        """Handle entry focus - show calendar if empty"""
+        if not self.date_var.get().strip():
+            self.show_calendar()
+    
+    def on_entry_key(self, event):
+        """Handle key input in entry"""
+        if event.keysym == 'Return':
+            self.validate_and_format_date()
+    
+    def validate_and_format_date(self):
+        """Validate and format the date in the entry"""
+        try:
+            date_str = self.date_var.get().strip()
+            if date_str:
+                # Try to parse the date
+                parsed_date = datetime.strptime(date_str, "%Y-%m-%d")
+                self.selected_date = parsed_date
+                self.date_var.set(parsed_date.strftime("%Y-%m-%d"))
+        except ValueError:
+            # Invalid date, reset to current
+            self.date_var.set(self.current_date.strftime("%Y-%m-%d"))
+    
+    def show_calendar(self):
+        """Show the calendar popup"""
+        if self.calendar_popup:
+            self.calendar_popup.destroy()
+        
+        # Create popup window
+        self.calendar_popup = tk.Toplevel(self.parent)
+        self.calendar_popup.title("Select Date")
+        self.calendar_popup.geometry("280x320")
+        self.calendar_popup.configure(bg='#FAFBFC')
+        self.calendar_popup.resizable(False, False)
+        
+        # Position popup near the entry
+        x = self.parent.winfo_rootx() + self.entry.winfo_width()
+        y = self.parent.winfo_rooty() + self.entry.winfo_height()
+        self.calendar_popup.geometry(f"+{x}+{y}")
+        
+        # Make popup modal
+        self.calendar_popup.transient(self.parent)
+        self.calendar_popup.grab_set()
+        
+        # Header frame
+        header_frame = tk.Frame(self.calendar_popup, bg='#4F46E5', height=50)
+        header_frame.pack(fill="x")
+        header_frame.pack_propagate(False)
+        
+        # Month/Year navigation
+        nav_frame = tk.Frame(header_frame, bg='#4F46E5')
+        nav_frame.pack(expand=True)
+        
+        # Previous month button
+        prev_button = tk.Button(
+            nav_frame,
+            text="◀",
+            font=('Segoe UI', 12, 'bold'),
+            bg='#4F46E5',
+            fg='white',
+            relief="flat",
+            bd=0,
+            cursor="hand2",
+            command=self.previous_month
+        )
+        prev_button.pack(side=tk.LEFT, padx=10)
+        
+        # Month/Year label
+        self.month_year_label = tk.Label(
+            nav_frame,
+            text=self.current_date.strftime("%B %Y"),
+            font=('Segoe UI', 12, 'bold'),
+            bg='#4F46E5',
+            fg='white'
+        )
+        self.month_year_label.pack(side=tk.LEFT, padx=20)
+        
+        # Next month button
+        next_button = tk.Button(
+            nav_frame,
+            text="▶",
+            font=('Segoe UI', 12, 'bold'),
+            bg='#4F46E5',
+            fg='white',
+            relief="flat",
+            bd=0,
+            cursor="hand2",
+            command=self.next_month
+        )
+        next_button.pack(side=tk.LEFT, padx=10)
+        
+        # Days of week header
+        days_frame = tk.Frame(self.calendar_popup, bg='#FAFBFC')
+        days_frame.pack(fill="x", padx=10, pady=5)
+        
+        days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        for i, day in enumerate(days):
+            day_label = tk.Label(
+                days_frame,
+                text=day,
+                font=('Segoe UI', 9, 'bold'),
+                bg='#FAFBFC',
+                fg='#6B7280',
+                width=3
+            )
+            day_label.grid(row=0, column=i, padx=1, pady=2)
+        
+        # Calendar grid
+        self.calendar_frame = tk.Frame(self.calendar_popup, bg='#FAFBFC')
+        self.calendar_frame.pack(expand=True, fill="both", padx=10, pady=5)
+        
+        # Populate calendar
+        self.populate_calendar()
+        
+        # Today button
+        today_button = tk.Button(
+            self.calendar_popup,
+            text="Today",
+            font=('Segoe UI', 10),
+            bg='#10B981',
+            fg='white',
+            relief="flat",
+            bd=0,
+            cursor="hand2",
+            command=self.go_to_today
+        )
+        today_button.pack(pady=10)
+        
+        # Bind popup close
+        self.calendar_popup.bind('<Escape>', lambda e: self.calendar_popup.destroy())
+        self.calendar_popup.bind('<FocusOut>', lambda e: self.calendar_popup.after(100, self.check_focus))
+    
+    def check_focus(self):
+        """Check if popup should be closed"""
+        try:
+            if self.calendar_popup and not self.calendar_popup.focus_get():
+                self.calendar_popup.destroy()
+                self.calendar_popup = None
+        except:
+            pass
+    
+    def previous_month(self):
+        """Go to previous month"""
+        if self.current_date.month == 1:
+            self.current_date = self.current_date.replace(year=self.current_date.year - 1, month=12)
+        else:
+            self.current_date = self.current_date.replace(month=self.current_date.month - 1)
+        self.month_year_label.config(text=self.current_date.strftime("%B %Y"))
+        self.populate_calendar()
+    
+    def next_month(self):
+        """Go to next month"""
+        if self.current_date.month == 12:
+            self.current_date = self.current_date.replace(year=self.current_date.year + 1, month=1)
+        else:
+            self.current_date = self.current_date.replace(month=self.current_date.month + 1)
+        self.month_year_label.config(text=self.current_date.strftime("%B %Y"))
+        self.populate_calendar()
+    
+    def go_to_today(self):
+        """Go to current month and select today's date"""
+        self.current_date = datetime.now()
+        self.selected_date = self.current_date
+        self.month_year_label.config(text=self.current_date.strftime("%B %Y"))
+        self.populate_calendar()
+    
+    def populate_calendar(self):
+        """Populate the calendar grid with dates"""
+        # Clear existing calendar
+        for widget in self.calendar_frame.winfo_children():
+            widget.destroy()
+        
+        # Get first day of month and number of days
+        first_day = self.current_date.replace(day=1)
+        start_weekday = first_day.weekday()  # Monday = 0, Sunday = 6
+        if start_weekday == 6:  # Sunday
+            start_weekday = 0
+        else:
+            start_weekday += 1
+        
+        # Get last day of month
+        if self.current_date.month == 12:
+            next_month = self.current_date.replace(year=self.current_date.year + 1, month=1)
+        else:
+            next_month = self.current_date.replace(month=self.current_date.month + 1)
+        last_day = (next_month - timedelta(days=1)).day
+        
+        # Create calendar grid
+        day_num = 1
+        for week in range(6):  # 6 weeks max
+            for day in range(7):  # 7 days per week
+                if week == 0 and day < start_weekday:
+                    # Empty cell before month starts
+                    empty_label = tk.Label(
+                        self.calendar_frame,
+                        text="",
+                        font=('Segoe UI', 9),
+                        bg='#FAFBFC',
+                        width=3,
+                        height=2
+                    )
+                    empty_label.grid(row=week, column=day, padx=1, pady=1)
+                elif day_num <= last_day:
+                    # Date cell
+                    date_button = tk.Button(
+                        self.calendar_frame,
+                        text=str(day_num),
+                        font=('Segoe UI', 9),
+                        bg='#FFFFFF',
+                        fg='#111827',
+                        relief="flat",
+                        bd=1,
+                        cursor="hand2",
+                        width=3,
+                        height=2,
+                        command=lambda d=day_num: self.select_date(d)
+                    )
+                    
+                    # Highlight today's date
+                    if (day_num == datetime.now().day and 
+                        self.current_date.month == datetime.now().month and 
+                        self.current_date.year == datetime.now().year):
+                        date_button.config(bg='#10B981', fg='white')
+                    
+                    # Highlight selected date
+                    if (day_num == self.selected_date.day and 
+                        self.current_date.month == self.selected_date.month and 
+                        self.current_date.year == self.selected_date.year):
+                        date_button.config(bg='#4F46E5', fg='white')
+                    
+                    date_button.grid(row=week, column=day, padx=1, pady=1)
+                    day_num += 1
+                else:
+                    # Empty cell after month ends
+                    empty_label = tk.Label(
+                        self.calendar_frame,
+                        text="",
+                        font=('Segoe UI', 9),
+                        bg='#FAFBFC',
+                        width=3,
+                        height=2
+                    )
+                    empty_label.grid(row=week, column=day, padx=1, pady=1)
+    
+    def select_date(self, day):
+        """Select a date from the calendar"""
+        self.selected_date = self.current_date.replace(day=day)
+        self.date_var.set(self.selected_date.strftime("%Y-%m-%d"))
+        
+        # Close popup
+        if self.calendar_popup:
+            self.calendar_popup.destroy()
+            self.calendar_popup = None
+
 class TimeTrackerApp:
     def __init__(self, root):
         self.root = root
@@ -864,16 +1172,14 @@ class TimeTrackerApp:
         ).pack(side=tk.LEFT, padx=(0, 5))
         
         from_date_var = tk.StringVar()
-        from_date_entry = tk.Entry(
+        from_date_picker = DatePicker(
             from_date_frame,
             textvariable=from_date_var,
             width=12,
             font=self.fonts['body'],
-            relief="solid",
-            bd=1
+            bg=self.colors['bg_card'],
+            fg=self.colors['text_primary']
         )
-        from_date_entry.pack(side=tk.LEFT)
-        from_date_entry.insert(0, "YYYY-MM-DD")
         
         # To date
         to_date_frame = tk.Frame(date_filter_frame, bg=self.colors['bg_card'])
@@ -888,16 +1194,14 @@ class TimeTrackerApp:
         ).pack(side=tk.LEFT, padx=(0, 5))
         
         to_date_var = tk.StringVar()
-        to_date_entry = tk.Entry(
+        to_date_picker = DatePicker(
             to_date_frame,
             textvariable=to_date_var,
             width=12,
             font=self.fonts['body'],
-            relief="solid",
-            bd=1
+            bg=self.colors['bg_card'],
+            fg=self.colors['text_primary']
         )
-        to_date_entry.pack(side=tk.LEFT)
-        to_date_entry.insert(0, "YYYY-MM-DD")
         
         # Clear dates button
         clear_dates_button = self.create_modern_button(
@@ -1410,16 +1714,14 @@ class TimeTrackerApp:
         from_date_label.pack(side=tk.LEFT, padx=(0, 5))
         
         reports_from_date_var = tk.StringVar()
-        reports_from_date_entry = tk.Entry(
+        reports_from_date_picker = DatePicker(
             date_filter_frame,
             textvariable=reports_from_date_var,
             width=12,
             font=self.fonts['body'],
-            relief="solid",
-            bd=1
+            bg=self.colors['bg_primary'],
+            fg=self.colors['text_primary']
         )
-        reports_from_date_entry.pack(side=tk.LEFT, padx=(0, 15))
-        reports_from_date_entry.insert(0, "YYYY-MM-DD")
         
         # To date
         to_date_label = tk.Label(
@@ -1432,16 +1734,14 @@ class TimeTrackerApp:
         to_date_label.pack(side=tk.LEFT, padx=(0, 5))
         
         reports_to_date_var = tk.StringVar()
-        reports_to_date_entry = tk.Entry(
+        reports_to_date_picker = DatePicker(
             date_filter_frame,
             textvariable=reports_to_date_var,
             width=12,
             font=self.fonts['body'],
-            relief="solid",
-            bd=1
+            bg=self.colors['bg_primary'],
+            fg=self.colors['text_primary']
         )
-        reports_to_date_entry.pack(side=tk.LEFT, padx=(0, 15))
-        reports_to_date_entry.insert(0, "YYYY-MM-DD")
         
         # Apply date filter button
         apply_date_filter_button = self.create_modern_button(
