@@ -58,7 +58,7 @@ class DatePicker:
         self.entry.bind('<FocusIn>', self.on_entry_focus)
         self.entry.bind('<Key>', self.on_entry_key)
         
-        # Set initial value
+        # Set initial value to current date (not placeholder)
         self.date_var.set(self.current_date.strftime("%Y-%m-%d"))
     
     def on_entry_focus(self, event):
@@ -699,7 +699,7 @@ class TimeTrackerApp:
         card = self.create_card_frame(parent, "⚙️ Quick Settings")
         card.pack(fill="x", pady=(0, 15))
         
-        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
+        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=25, pady=20)
         content_frame.pack(fill="x")
 
         # Settings info
@@ -3280,22 +3280,165 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             from_date = from_date_var.get().strip()
             to_date = to_date_var.get().strip()
             
-            if from_date and to_date:
+            # Check if dates are actually set (not placeholder text)
+            if from_date and to_date and from_date != "YYYY-MM-DD" and to_date != "YYYY-MM-DD":
                 try:
                     from_date_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
                     to_date_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
                     
-                    filtered_data = [entry for entry in data if from_date_obj <= datetime.strptime(entry.get('start_time', ''), "%Y-%m-%d").date() <= to_date_obj]
-                except ValueError:
-                    messagebox.showerror("Invalid Date Format", "Please enter dates in YYYY-MM-DD format")
+                    # Validate date range
+                    if from_date_obj > to_date_obj:
+                        messagebox.showerror("Invalid Date Range", "From date cannot be after To date")
+                        return
+                    
+                    filtered_data = []
+                    for entry in data:
+                        try:
+                            entry_date = datetime.strptime(entry.get('start_time', ''), "%Y-%m-%d %H:%M:%S").date()
+                            if from_date_obj <= entry_date <= to_date_obj:
+                                filtered_data.append(entry)
+                        except (ValueError, TypeError):
+                            # Skip entries with invalid dates
+                            continue
+                    
+                    # Show filtered reports
+                    self.show_filtered_reports(filtered_data, from_date, to_date)
+                    
+                except ValueError as e:
+                    messagebox.showerror("Invalid Date Format", f"Please ensure dates are in YYYY-MM-DD format.\n\nError: {str(e)}")
                     return
             else:
-                filtered_data = data
-            
-            self.show_reports()
+                # No valid dates, show all data
+                self.show_reports()
+                
         except Exception as e:
             self.log_error(f"Failed to apply reports date filter: {e}")
             messagebox.showerror("Error", f"Failed to apply reports date filter: {e}")
+
+    def show_filtered_reports(self, filtered_data, from_date, to_date):
+        """Show reports with filtered data"""
+        try:
+            # Create a new reports window with filtered data
+            reports_window = tk.Toplevel(self.root)
+            reports_window.title(f"📊 Time Tracking Reports (Filtered: {from_date} to {to_date})")
+            reports_window.geometry("750x550")
+            reports_window.configure(bg=self.colors['bg_primary'])
+            
+            if not filtered_data:
+                # No filtered data message
+                no_data_frame = tk.Frame(reports_window, bg=self.colors['bg_primary'])
+                no_data_frame.pack(expand=True, fill="both")
+                
+                tk.Label(
+                    no_data_frame, 
+                    text="📊 No Data in Date Range", 
+                    bg=self.colors['bg_primary'], 
+                    fg=self.colors['text_primary'], 
+                    font=self.fonts['title']
+                ).pack(expand=True)
+                
+                tk.Label(
+                    no_data_frame, 
+                    text=f"No entries found between {from_date} and {to_date}", 
+                    bg=self.colors['bg_primary'], 
+                    fg=self.colors['text_muted'], 
+                    font=self.fonts['body']
+                ).pack()
+                return
+            
+            # Header
+            header_frame = tk.Frame(reports_window, bg=self.colors['bg_primary'], pady=20)
+            header_frame.pack(fill="x")
+            
+            tk.Label(
+                header_frame, 
+                text=f"📊 Analytics & Reports (Filtered: {from_date} to {to_date})", 
+                bg=self.colors['bg_primary'], 
+                fg=self.colors['text_primary'], 
+                font=self.fonts['title']
+            ).pack()
+            
+            # Show filtered data count
+            tk.Label(
+                header_frame, 
+                text=f"Showing {len(filtered_data)} entries out of {len(self.load_data())} total", 
+                bg=self.colors['bg_primary'], 
+                fg=self.colors['text_secondary'], 
+                font=self.fonts['body']
+            ).pack(pady=(5, 0))
+            
+            # Create notebook for different report types
+            notebook = ttk.Notebook(reports_window)
+            notebook.pack(fill="both", expand=True, padx=25, pady=25)
+            
+            # Summary Report Tab
+            summary_frame = tk.Frame(notebook, bg=self.colors['bg_card'])
+            notebook.add(summary_frame, text="📈 Summary")
+            
+            # Calculate summary statistics for filtered data
+            total_entries = len(filtered_data)
+            total_seconds = sum(entry.get('duration_seconds', 0) for entry in filtered_data)
+            total_hours = total_seconds / 3600
+            
+            # Invoiced status breakdown
+            invoiced_seconds = sum(entry.get('duration_seconds', 0) for entry in filtered_data if entry.get('invoiced') == 'Yes')
+            not_invoiced_seconds = total_seconds - invoiced_seconds
+            invoiced_hours = invoiced_seconds / 3600
+            not_invoiced_hours = not_invoiced_seconds / 3600
+            
+            # Project breakdown
+            project_totals = {}
+            for entry in filtered_data:
+                project = entry.get('project', 'Unknown')
+                duration = entry.get('duration_seconds', 0)
+                project_totals[project] = project_totals.get(project, 0) + duration
+            
+            # Display summary
+            summary_text = f"""📊 FILTERED TIME TRACKING SUMMARY
+Date Range: {from_date} to {to_date}
+
+Total Entries: {total_entries}
+Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
+
+💰 INVOICING STATUS:
+• Invoiced: {self.format_seconds(invoiced_seconds)} ({invoiced_hours:.2f} hours)
+• Not Invoiced: {self.format_seconds(not_invoiced_seconds)} ({not_invoiced_hours:.2f} hours)
+
+📋 TOP PROJECTS:
+"""
+            
+            # Sort projects by time
+            sorted_projects = sorted(project_totals.items(), key=lambda x: x[1], reverse=True)
+            for i, (project, duration) in enumerate(sorted_projects[:5], 1):
+                hours = duration / 3600
+                summary_text += f"\n{i}. {project}: {self.format_seconds(duration)} ({hours:.2f} hours)"
+            
+            summary_label = tk.Label(
+                summary_frame, 
+                text=summary_text, 
+                bg=self.colors['bg_card'], 
+                fg=self.colors['text_primary'],
+                font=self.fonts['body'], 
+                justify=tk.LEFT
+            )
+            summary_label.pack(pady=30, padx=30, anchor="w")
+            
+            # Export button for filtered data
+            export_frame = tk.Frame(reports_window, bg=self.colors['bg_primary'], pady=10)
+            export_frame.pack()
+            
+            self.create_modern_button(
+                export_frame, 
+                "📁 Export Filtered Report", 
+                lambda: self.export_to_csv(filtered_data),
+                bg_color=self.colors['accent'],
+                hover_color=self.colors['accent_hover'],
+                width=20
+            ).pack()
+            
+        except Exception as e:
+            self.log_error(f"Failed to show filtered reports: {e}")
+            messagebox.showerror("Error", f"Failed to show filtered reports: {e}")
 
     def clear_reports_date_filters(self, from_date_var, to_date_var):
         """Clear date filters for reports"""
