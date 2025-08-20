@@ -1285,6 +1285,10 @@ class TimeTrackerApp:
         listbox.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=listbox.yview)
 
+        # Store filtered data and mapping for operations
+        filtered_data = []
+        original_to_filtered_mapping = {}  # Maps original indices to filtered indices
+        
         def refresh_listbox_with_fresh_data():
             """Refresh the listbox with fresh data from file"""
             try:
@@ -1319,7 +1323,8 @@ class TimeTrackerApp:
                 
                 # Always use fresh data for filtering
                 fresh_data = self.load_data()
-                filtered_data = []
+                filtered_data.clear()
+                original_to_filtered_mapping.clear()
                 
                 # First filter by status
                 if filter_value == "All":
@@ -1333,7 +1338,7 @@ class TimeTrackerApp:
                 
                 # Then filter by date range if specified
                 if from_date or to_date:
-                    for entry in status_filtered:
+                    for i, entry in enumerate(status_filtered):
                         try:
                             entry_date = datetime.strptime(entry.get('start_time', ''), "%Y-%m-%d %H:%M:%S").date()
                             
@@ -1355,13 +1360,22 @@ class TimeTrackerApp:
                                 except ValueError:
                                     pass  # Invalid date format, skip this filter
                             
+                            # Store the filtered entry and its original index
+                            original_index = fresh_data.index(entry)
                             filtered_data.append(entry)
+                            original_to_filtered_mapping[original_index] = len(filtered_data) - 1
+                            
                         except (ValueError, TypeError):
                             # If date parsing fails, include the entry
+                            original_index = fresh_data.index(entry)
                             filtered_data.append(entry)
+                            original_to_filtered_mapping[original_index] = len(filtered_data) - 1
                 else:
                     # No date filtering, use status filtered data
-                    filtered_data = status_filtered
+                    for i, entry in enumerate(status_filtered):
+                        original_index = fresh_data.index(entry)
+                        filtered_data.append(entry)
+                        original_to_filtered_mapping[original_index] = len(filtered_data) - 1
                 
                 # Populate with filtered data
                 for i, entry in enumerate(filtered_data):
@@ -1385,16 +1399,8 @@ class TimeTrackerApp:
             text = text or ""
             return (text[:length] + "…") if len(text) > length else text
 
-        # Populate
-        for i, entry in enumerate(data):
-            proj = entry.get('project', '')
-            st = entry.get('start_time', '')
-            et = entry.get('stop_time', '')
-            dur = entry.get('duration') or self.format_seconds(entry.get('duration_seconds', 0))
-            memo_snippet = truncate(entry.get('memo', ''), 30)
-            invoiced_status = entry.get('invoiced', 'No')
-            invoiced_icon = "💰" if invoiced_status == "Yes" else "📝"
-            listbox.insert(tk.END, f"{i+1}. {proj} | {st} - {et} | {dur} | {invoiced_icon} {invoiced_status} | 📝 {memo_snippet}")
+        # Initial population
+        apply_filter()
 
         # Buttons frame
         buttons_frame = tk.Frame(content_card, bg=self.colors['bg_card'], pady=20)
@@ -1407,13 +1413,24 @@ class TimeTrackerApp:
                 return
 
             # For editing, we only work with the first selected entry
-            index = selected[0]
-            # Get fresh data for editing
-            fresh_data = self.load_data()
-            if index >= len(fresh_data):
+            filtered_index = selected[0]
+            
+            # Get the actual entry from filtered data
+            if filtered_index >= len(filtered_data):
                 messagebox.showerror("Error", "Entry no longer exists.")
                 return
-            entry = fresh_data[index]
+            entry = filtered_data[filtered_index]
+            
+            # Find the original index in the full dataset
+            original_index = None
+            for orig_idx, filtered_idx in original_to_filtered_mapping.items():
+                if filtered_idx == filtered_index:
+                    original_index = orig_idx
+                    break
+            
+            if original_index is None:
+                messagebox.showerror("Error", "Could not locate original entry.")
+                return
             
             # Show info if multiple entries were selected
             if len(selected) > 1:
@@ -1529,38 +1546,38 @@ class TimeTrackerApp:
 
                 # Get fresh data and update
                 fresh_data = self.load_data()
-                if index >= len(fresh_data):
+                if original_index >= len(fresh_data):
                     messagebox.showerror("Error", "Entry no longer exists.")
                     return
 
                 # Update string fields
                 for field in fields:
-                    fresh_data[index][field] = entries_widgets[field].get()
+                    fresh_data[original_index][field] = entries_widgets[field].get()
                 # Update memo
-                fresh_data[index]["memo"] = entries_widgets["memo"].get("1.0", "end-1c")
+                fresh_data[original_index]["memo"] = entries_widgets["memo"].get("1.0", "end-1c")
                 # Update invoiced status
-                fresh_data[index]["invoiced"] = entries_widgets["invoiced"].get()
+                fresh_data[original_index]["invoiced"] = entries_widgets["invoiced"].get()
 
                 # Try to sync duration_seconds if possible
-                fresh_data[index]["duration_seconds"] = self._parse_duration_to_seconds(duration_str)
+                fresh_data[original_index]["duration_seconds"] = self._parse_duration_to_seconds(duration_str)
 
                 self.save_data(fresh_data)
                 messagebox.showinfo("Saved", "Entry updated successfully.")
                 edit_window.destroy()
                 # Refresh the listbox with fresh data
-                refresh_listbox_with_fresh_data()
+                apply_filter()
 
             def delete_entry():
                 if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this entry?"):
                     # Get fresh data and delete
                     fresh_data = self.load_data()
-                    if index < len(fresh_data):
-                        fresh_data.pop(index)
+                    if original_index < len(fresh_data):
+                        fresh_data.pop(original_index)
                         self.save_data(fresh_data)
                         messagebox.showinfo("Deleted", "Entry deleted successfully.")
                         edit_window.destroy()
                         # Refresh the listbox with fresh data
-                        refresh_listbox_with_fresh_data()
+                        apply_filter()
 
             # Save and Delete buttons
             button_frame = tk.Frame(form_frame, bg=self.colors['bg_card'])
@@ -1592,31 +1609,56 @@ class TimeTrackerApp:
 
             # Handle multiple deletions
             if len(selected) == 1:
-                index = selected[0]
-                if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete entry {index+1}?"):
+                filtered_index = selected[0]
+                if filtered_index >= len(filtered_data):
+                    messagebox.showerror("Error", "Entry no longer exists.")
+                    return
+                
+                # Find the original index
+                original_index = None
+                for orig_idx, filtered_idx in original_to_filtered_mapping.items():
+                    if filtered_idx == filtered_index:
+                        original_index = orig_idx
+                        break
+                
+                if original_index is None:
+                    messagebox.showerror("Error", "Could not locate original entry.")
+                    return
+                
+                if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete this entry?"):
                     # Get fresh data and delete
                     fresh_data = self.load_data()
-                    if index < len(fresh_data):
-                        fresh_data.pop(index)
+                    if original_index < len(fresh_data):
+                        fresh_data.pop(original_index)
                         self.save_data(fresh_data)
                         messagebox.showinfo("Deleted", "Entry deleted successfully.")
-                        edit_window.destroy()
                         # Refresh the listbox with fresh data
-                        refresh_listbox_with_fresh_data()
+                        apply_filter()
             else:
                 # Multiple deletions
                 count = len(selected)
                 if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {count} selected entries?"):
                     # Get fresh data and delete
                     fresh_data = self.load_data()
+                    original_indices_to_delete = []
+                    
+                    # Find all original indices for selected filtered entries
+                    for filtered_index in selected:
+                        if filtered_index < len(filtered_data):
+                            for orig_idx, filtered_idx in original_to_filtered_mapping.items():
+                                if filtered_idx == filtered_index:
+                                    original_indices_to_delete.append(orig_idx)
+                                    break
+                    
                     # Delete in reverse order to maintain indices
-                    for index in sorted(selected, reverse=True):
-                        if index < len(fresh_data):
-                            fresh_data.pop(index)
+                    for original_index in sorted(original_indices_to_delete, reverse=True):
+                        if original_index < len(fresh_data):
+                            fresh_data.pop(original_index)
+                    
                     self.save_data(fresh_data)
                     messagebox.showinfo("Deleted", f"{count} entries deleted successfully.")
                     # Refresh the listbox with fresh data
-                    refresh_listbox_with_fresh_data()
+                    apply_filter()
 
         # Action buttons with modern styling
         self.create_modern_button(
@@ -1649,7 +1691,7 @@ class TimeTrackerApp:
         self.create_modern_button(
             buttons_frame, 
             "📊 Export CSV", 
-            lambda: self.export_to_csv(data), 
+            lambda: self.export_to_csv(filtered_data), 
             bg_color=self.colors['secondary'],
             hover_color=self.colors['secondary_hover'],
             width=15
@@ -3139,25 +3181,42 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             
             if len(selection) == 1:
                 # Single selection - toggle status
-                index = selection[0]
-                if index < len(data):
-                    entry = data[index]
-                    current_status = entry.get('invoiced', 'No')
-                    new_status = 'Yes' if current_status == 'No' else 'No'
-                    
-                    entry['invoiced'] = new_status
-                    updated_count = 1
-                    
-                    status_text = "invoiced" if new_status == 'Yes' else "not invoiced"
-                    self.update_status(f"Entry marked as {status_text}")
+                filtered_index = selection[0]
+                
+                # We need to find the actual entry in the filtered view
+                # Since we can't directly access the filtered_data from here,
+                # we'll work with the current listbox content
+                if filtered_index < listbox.size():
+                    # Get the entry text to extract project and time info
+                    entry_text = listbox.get(filtered_index)
+                    # Parse the entry to find the original entry in data
+                    # This is a fallback approach - ideally we'd have access to filtered_data
+                    for i, entry in enumerate(data):
+                        if (entry.get('project', '') in entry_text and 
+                            entry.get('start_time', '') in entry_text):
+                            current_status = entry.get('invoiced', 'No')
+                            new_status = 'Yes' if current_status == 'No' else 'No'
+                            
+                            entry['invoiced'] = new_status
+                            updated_count = 1
+                            
+                            status_text = "invoiced" if new_status == 'Yes' else "not invoiced"
+                            self.update_status(f"Entry marked as {status_text}")
+                            break
             else:
                 # Multiple selection - mark all as invoiced
                 count = len(selection)
                 if messagebox.askyesno("Confirm Bulk Update", f"Mark all {count} selected entries as invoiced?"):
-                    for index in selection:
-                        if index < len(data):
-                            data[index]['invoiced'] = 'Yes'
-                            updated_count += 1
+                    # For multiple selection, we'll need to find each entry
+                    for filtered_index in selection:
+                        if filtered_index < listbox.size():
+                            entry_text = listbox.get(filtered_index)
+                            for i, entry in enumerate(data):
+                                if (entry.get('project', '') in entry_text and 
+                                    entry.get('start_time', '') in entry_text):
+                                    data[i]['invoiced'] = 'Yes'
+                                    updated_count += 1
+                                    break
                     
                     self.update_status(f"{updated_count} entries marked as invoiced")
                 else:
@@ -3167,25 +3226,11 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
                 # Save changes
                 self.save_data(data)
                 
-                # Refresh the listbox content with fresh data
-                # Find the listbox and refresh it directly
-                listbox.delete(0, tk.END)
-                fresh_data = self.load_data()
-                for i, entry in enumerate(fresh_data):
-                    proj = entry.get('project', '')
-                    st = entry.get('start_time', '')
-                    et = entry.get('stop_time', '')
-                    dur = entry.get('duration') or self.format_seconds(entry.get('duration_seconds', 0))
-                    memo_snippet = (entry.get('memo', '')[:30] + "…") if len(entry.get('memo', '')) > 30 else entry.get('memo', '')
-                    invoiced_status = entry.get('invoiced', 'No')
-                    invoiced_icon = "💰" if invoiced_status == "Yes" else "📝"
-                    listbox.insert(tk.END, f"{i+1}. {proj} | {st} - {et} | {dur} | {invoiced_icon} {invoiced_status} | 📝 {memo_snippet}")
-                
-                # Restore selection
-                for index in selection:
-                    if index < listbox.size():
-                        listbox.selection_set(index)
-                        listbox.see(index)
+                # Refresh the listbox content by triggering a filter refresh
+                # We'll need to find and call the apply_filter function
+                # For now, let's just refresh the entire window
+                entries_window.destroy()
+                self.view_entries()
                 
         except Exception as e:
             self.log_error(f"Failed to mark as invoiced: {e}")
