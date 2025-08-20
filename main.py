@@ -128,7 +128,7 @@ class TimeTrackerApp:
         card = self.create_card_frame(parent, "📋 Project Details")
         card.pack(fill="x", pady=(0, 15))
         
-        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=(0, 20))
+        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
         content_frame.pack(fill="x")
 
         # Project Name
@@ -184,7 +184,7 @@ class TimeTrackerApp:
         card = self.create_card_frame(parent, "⏱️ Timer Controls")
         card.pack(fill="x", pady=(0, 15))
         
-        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=(0, 20))
+        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
         content_frame.pack(fill="x")
 
         # Timer display
@@ -241,12 +241,12 @@ class TimeTrackerApp:
         card = self.create_card_frame(parent, "📊 Features & Tools")
         card.pack(fill="x", pady=(0, 15))
         
-        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=(0, 20))
+        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
         content_frame.pack(fill="x")
 
         # First row
         row1_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
-        row1_frame.pack(pady=(10, 10))
+        row1_frame.pack(pady=10)
 
         self.create_modern_button(
             row1_frame, 
@@ -280,12 +280,12 @@ class TimeTrackerApp:
         card = self.create_card_frame(parent, "⚙️ Settings & Backup")
         card.pack(fill="x", pady=(0, 15))
         
-        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=(0, 20))
+        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
         content_frame.pack(fill="x")
 
         # Settings row
         settings_row = tk.Frame(content_frame, bg=self.colors['bg_card'])
-        settings_row.pack(fill="x", pady=(10, 10))
+        settings_row.pack(fill="x", pady=10)
 
         # Always on Top Toggle
         self.always_on_top = tk.BooleanVar(value=self.config.get('always_on_top', True))
@@ -334,7 +334,7 @@ class TimeTrackerApp:
     def create_status_section(self, parent):
         """Create the status display section"""
         status_frame = tk.Frame(parent, bg=self.colors['bg_primary'])
-        status_frame.pack(fill="x", pady=(10, 0))
+        status_frame.pack(fill="x", pady=10)
 
         # Status label with modern styling
         self.status_label = tk.Label(
@@ -670,7 +670,7 @@ class TimeTrackerApp:
 
         # Main content card
         content_card = tk.Frame(entries_window, bg=self.colors['bg_card'], relief='solid', bd=1)
-        content_card.pack(fill="both", expand=True, padx=25, pady=(0, 25))
+        content_card.pack(fill="both", expand=True, padx=25, pady=25)
 
         # Listbox + scrollbar in card
         list_frame = tk.Frame(content_card, bg=self.colors['bg_card'])
@@ -741,7 +741,7 @@ class TimeTrackerApp:
 
             # Main form card
             form_card = tk.Frame(edit_window, bg=self.colors['bg_card'], relief='solid', bd=1)
-            form_card.pack(fill="both", expand=True, padx=25, pady=(0, 25))
+            form_card.pack(fill="both", expand=True, padx=25, pady=25)
 
             form_frame = tk.Frame(form_card, bg=self.colors['bg_card'], padx=25, pady=25)
             form_frame.pack(fill="both", expand=True)
@@ -944,7 +944,7 @@ class TimeTrackerApp:
 
         # Create notebook for different report types
         notebook = ttk.Notebook(reports_window)
-        notebook.pack(fill="both", expand=True, padx=25, pady=(0, 25))
+        notebook.pack(fill="both", expand=True, padx=25, pady=25)
 
         # Summary Report Tab
         summary_frame = tk.Frame(notebook, bg=self.colors['bg_card'])
@@ -1057,7 +1057,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
 
         # Main content card
         content_card = tk.Frame(dialog, bg=self.colors['bg_card'], relief='solid', bd=1)
-        content_card.pack(fill="both", expand=True, padx=25, pady=(0, 25))
+        content_card.pack(fill="both", expand=True, padx=25, pady=25)
 
         # Buttons frame
         buttons_frame = tk.Frame(content_card, bg=self.colors['bg_card'], pady=30)
@@ -1249,7 +1249,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             
             # Main content card
             content_card = tk.Frame(backup_dialog, bg=self.colors['bg_card'], relief='solid', bd=1)
-            content_card.pack(fill="both", expand=True, padx=25, pady=(0, 25))
+            content_card.pack(fill="both", expand=True, padx=25, pady=25)
 
             # Backup listbox
             list_frame = tk.Frame(content_card, bg=self.colors['bg_card'])
