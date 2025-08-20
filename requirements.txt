@@ -1,0 +1,26 @@
+# TimeTracker Dependencies
+# These are the packages needed to run the application
+
+# Core Python packages (usually included with Python)
+# tkinter - GUI framework (built-in)
+# json - JSON handling (built-in)
+# os - Operating system interface (built-in)
+# csv - CSV file handling (built-in)
+# datetime - Date and time handling (built-in)
+# shutil - High-level file operations (built-in)
+# typing - Type hints (built-in)
+
+# Optional: For building executables
+# pyinstaller>=5.0.0
+# cx_Freeze>=6.0.0
+# py2exe>=0.11.0
+
+# Development and Testing Dependencies
+# unittest - Testing framework (built-in)
+# tempfile - Temporary file operations (built-in)
+# unittest.mock - Mocking utilities (built-in)
+
+# Note: The application uses only built-in Python packages,
+# so no additional pip installations are required to run it.
+# These optional packages are only needed for creating executables.
+# Testing framework is built into Python standard library. 
