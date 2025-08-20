@@ -70,6 +70,9 @@ class TimeTrackerApp:
 
     def create_ui(self):
         """Create the modern UI layout"""
+        # Create menu bar
+        self.create_menu_bar()
+        
         # Main container with padding
         main_frame = tk.Frame(self.root, bg=self.colors['bg_primary'], padx=25, pady=25)
         main_frame.pack(expand=True, fill="both")
@@ -93,8 +96,8 @@ class TimeTrackerApp:
         # Timer controls card
         self.create_timer_controls(main_frame)
         
-        # Feature buttons card
-        self.create_feature_buttons(main_frame)
+        # Quick actions card
+        self.create_quick_actions(main_frame)
         
         # Settings card
         self.create_settings_card(main_frame)
@@ -105,6 +108,109 @@ class TimeTrackerApp:
         # Create backup directory if it doesn't exist
         if not os.path.exists(self.backup_dir):
             os.makedirs(self.backup_dir)
+
+    def create_menu_bar(self):
+        """Create the application menu bar"""
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+        
+        # File Menu
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="📁 File", menu=file_menu)
+        file_menu.add_command(label="📤 Export to CSV", command=lambda: self.export_to_csv(self.load_data()))
+        file_menu.add_command(label="📥 Import from CSV", command=self.import_from_csv)
+        file_menu.add_separator()
+        file_menu.add_command(label="💾 Create Backup", command=self.manual_backup)
+        file_menu.add_command(label="🔄 Restore from Backup", command=self.restore_from_backup)
+        file_menu.add_separator()
+        file_menu.add_command(label="❌ Exit", command=self.root.quit)
+        
+        # View Menu
+        view_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="👁️ View", menu=view_menu)
+        view_menu.add_command(label="📋 Time Entries", command=self.view_entries)
+        view_menu.add_command(label="📊 Reports & Analytics", command=self.show_reports)
+        
+        # Tools Menu
+        tools_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="🛠️ Tools", menu=tools_menu)
+        tools_menu.add_command(label="⚙️ Data Management", command=self.import_export_dialog)
+        tools_menu.add_command(label="🔧 Settings", command=self.show_settings)
+        
+        # Help Menu
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="❓ Help", menu=help_menu)
+        help_menu.add_command(label="📖 About", command=self.show_about)
+
+    def create_quick_actions(self, parent):
+        """Create the quick actions section"""
+        card = self.create_card_frame(parent, "🚀 Quick Actions")
+        card.pack(fill="x", pady=(0, 15))
+        
+        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
+        content_frame.pack(fill="x")
+
+        # First row of buttons
+        row1_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
+        row1_frame.pack(pady=(0, 10))
+
+        self.create_modern_button(
+            row1_frame, 
+            "📋 View Entries", 
+            self.view_entries,
+            bg_color=self.colors['info'],
+            hover_color='#2563EB',
+            width=18
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            row1_frame, 
+            "📊 Reports", 
+            self.show_reports,
+            bg_color=self.colors['pause'],
+            hover_color=self.colors['pause_hover'],
+            width=18
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            row1_frame, 
+            "📁 Data Tools", 
+            self.import_export_dialog,
+            bg_color=self.colors['accent'],
+            hover_color=self.colors['accent_hover'],
+            width=18
+        ).pack(side=tk.LEFT)
+
+        # Second row of buttons
+        row2_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
+        row2_frame.pack()
+
+        self.create_modern_button(
+            row2_frame, 
+            "⚙️ Settings", 
+            self.show_settings,
+            bg_color=self.colors['text_secondary'],
+            hover_color=self.colors['text_primary'],
+            width=18
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            row2_frame, 
+            "💾 Quick Backup", 
+            self.manual_backup,
+            bg_color=self.colors['secondary'],
+            hover_color=self.colors['secondary_hover'],
+            width=18
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            row2_frame, 
+            "❓ Help", 
+            self.show_about,
+            bg_color=self.colors['warning'],
+            hover_color=self.colors['accent_hover'],
+            width=18
+        ).pack(side=tk.LEFT)
 
     def create_card_frame(self, parent, title=None):
         """Create a modern card-style frame"""
@@ -236,100 +342,38 @@ class TimeTrackerApp:
         )
         self.stop_button.pack(side=tk.LEFT)
 
-    def create_feature_buttons(self, parent):
-        """Create the feature access buttons"""
-        card = self.create_card_frame(parent, "📊 Features & Tools")
-        card.pack(fill="x", pady=(0, 15))
-        
-        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
-        content_frame.pack(fill="x")
-
-        # First row
-        row1_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
-        row1_frame.pack(pady=10)
-
-        self.create_modern_button(
-            row1_frame, 
-            "📋 Entries", 
-            self.view_entries,
-            bg_color=self.colors['info'],
-            hover_color='#2563EB',
-            width=15
-        ).pack(side=tk.LEFT, padx=(0, 10))
-
-        self.create_modern_button(
-            row1_frame, 
-            "📊 Reports", 
-            self.show_reports,
-            bg_color=self.colors['pause'],
-            hover_color=self.colors['pause_hover'],
-            width=15
-        ).pack(side=tk.LEFT, padx=(0, 10))
-
-        self.create_modern_button(
-            row1_frame, 
-            "📁 Data", 
-            self.import_export_dialog,
-            bg_color=self.colors['accent'],
-            hover_color=self.colors['accent_hover'],
-            width=15
-        ).pack(side=tk.LEFT)
-
     def create_settings_card(self, parent):
         """Create the settings section"""
-        card = self.create_card_frame(parent, "⚙️ Settings & Backup")
+        card = self.create_card_frame(parent, "⚙️ Quick Settings")
         card.pack(fill="x", pady=(0, 15))
         
         content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
         content_frame.pack(fill="x")
 
-        # Settings row
-        settings_row = tk.Frame(content_frame, bg=self.colors['bg_card'])
-        settings_row.pack(fill="x", pady=10)
+        # Settings info
+        info_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
+        info_frame.pack(fill="x", pady=10)
 
-        # Always on Top Toggle
-        self.always_on_top = tk.BooleanVar(value=self.config.get('always_on_top', True))
-        self.root.attributes("-topmost", self.always_on_top.get())
-
-        always_top_cb = tk.Checkbutton(
-            settings_row,
-            text="Keep on top",
-            variable=self.always_on_top,
-            command=self.toggle_always_on_top,
+        tk.Label(
+            info_frame,
+            text="ℹ️ Use the Settings button above for full configuration options",
             bg=self.colors['bg_card'],
-            fg=self.colors['text_primary'],
-            font=self.fonts['body'],
-            activebackground=self.colors['bg_card'],
-            selectcolor=self.colors['bg_card'],
-            anchor="w"
-        )
-        always_top_cb.pack(side=tk.LEFT, padx=(0, 20))
+            fg=self.colors['text_secondary'],
+            font=self.fonts['small']
+        ).pack(anchor="w")
 
-        # Auto-backup Toggle
-        self.auto_backup = tk.BooleanVar(value=self.config.get('auto_backup', True))
-        auto_backup_cb = tk.Checkbutton(
-            settings_row,
-            text="Auto-backup",
-            variable=self.auto_backup,
-            command=self.toggle_auto_backup,
-            bg=self.colors['bg_card'],
-            fg=self.colors['text_primary'],
-            font=self.fonts['body'],
-            activebackground=self.colors['bg_card'],
-            selectcolor=self.colors['bg_card'],
-            anchor="w"
-        )
-        auto_backup_cb.pack(side=tk.LEFT, padx=(0, 20))
+        # Quick backup button
+        backup_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
+        backup_frame.pack(fill="x", pady=10)
 
-        # Manual Backup Button
         self.create_modern_button(
-            settings_row, 
-            "💾 Backup", 
+            backup_frame, 
+            "💾 Quick Backup", 
             self.manual_backup,
             bg_color=self.colors['secondary'],
             hover_color=self.colors['secondary_hover'],
-            width=12
-        ).pack(side=tk.RIGHT)
+            width=18
+        ).pack()
 
     def create_status_section(self, parent):
         """Create the status display section"""
@@ -1322,6 +1366,188 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         except Exception as e:
             self.log_error(f"Backup restore failed: {e}")
             messagebox.showerror("Backup Error", f"Failed to access backup directory: {e}")
+
+    def show_settings(self):
+        """Show the settings dialog"""
+        settings_window = tk.Toplevel(self.root)
+        settings_window.title("⚙️ Settings")
+        settings_window.geometry("500x400")
+        settings_window.configure(bg=self.colors['bg_primary'])
+        
+        # Header
+        header_frame = tk.Frame(settings_window, bg=self.colors['bg_primary'], pady=20)
+        header_frame.pack(fill="x")
+        
+        tk.Label(
+            header_frame, 
+            text="⚙️ Application Settings", 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['text_primary'], 
+            font=self.fonts['title']
+        ).pack()
+
+        # Main content card
+        content_card = tk.Frame(settings_window, bg=self.colors['bg_card'], relief='solid', bd=1)
+        content_card.pack(fill="both", expand=True, padx=25, pady=25)
+
+        settings_frame = tk.Frame(content_card, bg=self.colors['bg_card'], padx=25, pady=25)
+        settings_frame.pack(fill="both", expand=True)
+
+        # Always on Top Toggle
+        self.always_on_top = tk.BooleanVar(value=self.config.get('always_on_top', True))
+        self.root.attributes("-topmost", self.always_on_top.get())
+
+        always_top_cb = tk.Checkbutton(
+            settings_frame,
+            text="Keep window on top of other applications",
+            variable=self.always_on_top,
+            command=self.toggle_always_on_top,
+            bg=self.colors['bg_card'],
+            fg=self.colors['text_primary'],
+            font=self.fonts['body'],
+            activebackground=self.colors['bg_card'],
+            selectcolor=self.colors['bg_card'],
+            anchor="w"
+        )
+        always_top_cb.pack(anchor="w", pady=10)
+
+        # Auto-backup Toggle
+        self.auto_backup = tk.BooleanVar(value=self.config.get('auto_backup', True))
+        auto_backup_cb = tk.Checkbutton(
+            settings_frame,
+            text="Automatically create backups when saving data",
+            variable=self.auto_backup,
+            command=self.toggle_auto_backup,
+            bg=self.colors['bg_card'],
+            fg=self.colors['text_primary'],
+            font=self.fonts['body'],
+            activebackground=self.colors['bg_card'],
+            selectcolor=self.colors['bg_card'],
+            anchor="w"
+        )
+        auto_backup_cb.pack(anchor="w", pady=10)
+
+        # Backup retention info
+        info_frame = tk.Frame(settings_frame, bg=self.colors['bg_card'])
+        info_frame.pack(fill="x", pady=20)
+        
+        tk.Label(
+            info_frame,
+            text="ℹ️ Auto-backups keep the last 10 backup files",
+            bg=self.colors['bg_card'],
+            fg=self.colors['text_secondary'],
+            font=self.fonts['small']
+        ).pack(anchor="w")
+
+        # Buttons
+        button_frame = tk.Frame(settings_frame, bg=self.colors['bg_card'])
+        button_frame.pack(side=tk.BOTTOM, pady=20)
+        
+        self.create_modern_button(
+            button_frame, 
+            "💾 Manual Backup", 
+            self.manual_backup,
+            bg_color=self.colors['secondary'],
+            hover_color=self.colors['secondary_hover'],
+            width=15
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.create_modern_button(
+            button_frame, 
+            "✅ Close", 
+            settings_window.destroy,
+            bg_color=self.colors['info'],
+            hover_color='#2563EB',
+            width=15
+        ).pack(side=tk.RIGHT)
+
+    def show_about(self):
+        """Show the about dialog"""
+        about_window = tk.Toplevel(self.root)
+        about_window.title("📖 About TimeTracker Pro")
+        about_window.geometry("450x350")
+        about_window.configure(bg=self.colors['bg_primary'])
+        
+        # Header
+        header_frame = tk.Frame(about_window, bg=self.colors['bg_primary'], pady=20)
+        header_frame.pack(fill="x")
+        
+        tk.Label(
+            header_frame, 
+            text="⏱️ TimeTracker Pro", 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['primary'], 
+            font=self.fonts['title']
+        ).pack()
+        
+        tk.Label(
+            header_frame, 
+            text="Professional Time Tracking Application", 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['text_secondary'], 
+            font=self.fonts['body']
+        ).pack(pady=(5, 0))
+
+        # Main content card
+        content_card = tk.Frame(about_window, bg=self.colors['bg_card'], relief='solid', bd=1)
+        content_card.pack(fill="both", expand=True, padx=25, pady=25)
+
+        about_frame = tk.Frame(content_card, bg=self.colors['bg_card'], padx=25, pady=25)
+        about_frame.pack(fill="both", expand=True)
+
+        # Version and features
+        about_text = """Version 1.0
+
+🚀 Features:
+• Start/Stop/Pause Timer
+• Project Management
+• Notes & Descriptions
+• Time Entry Management
+• Reports & Analytics
+• Data Import/Export
+• Automatic Backups
+• Modern UI Design
+
+🛠️ Built with:
+• Python 3.7+
+• Tkinter GUI Framework
+• JSON Data Storage
+• Comprehensive Testing
+
+📁 Data Management:
+• Local storage only
+• CSV import/export
+• Automatic backups
+• Data validation
+
+🎨 Modern Design:
+• Professional appearance
+• Intuitive interface
+• Responsive controls
+• Hover effects"""
+
+        about_label = tk.Label(
+            about_frame,
+            text=about_text,
+            bg=self.colors['bg_card'],
+            fg=self.colors['text_primary'],
+            font=self.fonts['body'],
+            justify=tk.LEFT
+        )
+        about_label.pack(anchor="w")
+
+        # Close button
+        button_frame = tk.Frame(about_frame, bg=self.colors['bg_card'])
+        button_frame.pack(side=tk.BOTTOM, pady=20)
+        
+        self.create_modern_button(
+            button_frame, 
+            "✅ Close", 
+            about_window.destroy,
+            bg_color=self.colors['info'],
+            hover_color='#2563EB',
+            width=15
+        ).pack()
 
     # Utility to parse HH:MM:SS safely
     def _parse_duration_to_seconds(self, s: str) -> int:
