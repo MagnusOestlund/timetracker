@@ -3466,3 +3466,8 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         """Close all open dialogs"""
         for dialog_type in list(self.open_dialogs.keys()):
             self.close_dialog(dialog_type)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = TimeTrackerApp(root)
+    root.mainloop()
