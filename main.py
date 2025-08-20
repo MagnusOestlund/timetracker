@@ -2366,7 +2366,6 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
 
         # Always on Top Toggle
         self.always_on_top = tk.BooleanVar(value=self.config.get('always_on_top', True))
-        self.root.attributes("-topmost", self.always_on_top.get())
 
         always_top_cb = tk.Checkbutton(
             settings_frame,
@@ -3435,13 +3434,17 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         dialog.geometry(geometry)
         dialog.configure(bg=self.colors['bg_primary'])
         
+        # Force dialog to appear in front - this is critical!
+        dialog.lift()
+        dialog.attributes('-topmost', True)
+        
         # Position dialog relative to main window
         self.root.update_idletasks()
         x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (int(geometry.split('x')[0]) // 2)
         y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (int(geometry.split('x')[1]) // 2)
         dialog.geometry(f"+{x}+{y}")
         
-        # Make dialog modal if requested
+        # Make dialog modal if requested - this should keep it in front
         if modal:
             dialog.transient(self.root)
             dialog.grab_set()
@@ -3457,6 +3460,10 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             dialog.destroy()
         
         dialog.protocol("WM_DELETE_WINDOW", on_dialog_close)
+        
+        # Final positioning and focus - ensure it's visible
+        dialog.lift()
+        dialog.focus_force()
         
         return dialog
 
