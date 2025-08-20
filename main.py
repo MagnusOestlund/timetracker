@@ -1681,7 +1681,7 @@ class TimeTrackerApp:
         
         self.create_modern_button(
             buttons_frame, 
-            "💰 Mark Invoiced", 
+            "💰 Toggle Invoiced", 
             self.mark_as_invoiced, 
             bg_color=self.colors['accent'],
             hover_color=self.colors['accent_hover'],
@@ -3204,9 +3204,9 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
                             self.update_status(f"Entry marked as {status_text}")
                             break
             else:
-                # Multiple selection - mark all as invoiced
+                # Multiple selection - toggle status for each entry
                 count = len(selection)
-                if messagebox.askyesno("Confirm Bulk Update", f"Mark all {count} selected entries as invoiced?"):
+                if messagebox.askyesno("Confirm Bulk Update", f"Toggle invoiced status for {count} selected entries?"):
                     # For multiple selection, we'll need to find each entry
                     for filtered_index in selection:
                         if filtered_index < listbox.size():
@@ -3214,11 +3214,14 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
                             for i, entry in enumerate(data):
                                 if (entry.get('project', '') in entry_text and 
                                     entry.get('start_time', '') in entry_text):
-                                    data[i]['invoiced'] = 'Yes'
+                                    # Toggle the status: Yes -> No, No -> Yes
+                                    current_status = entry.get('invoiced', 'No')
+                                    new_status = 'Yes' if current_status == 'No' else 'No'
+                                    data[i]['invoiced'] = new_status
                                     updated_count += 1
                                     break
                     
-                    self.update_status(f"{updated_count} entries marked as invoiced")
+                    self.update_status(f"{updated_count} entries status toggled")
                 else:
                     return
             
