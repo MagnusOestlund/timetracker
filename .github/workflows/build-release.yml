@@ -102,7 +102,7 @@ jobs:
         Compress-Archive -Path "TimeTracker-Pro-Portable/*" -DestinationPath "TimeTracker-Pro-Windows.zip"
         
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: TimeTracker-Pro-Windows
         path: TimeTracker-Pro-Windows.zip
@@ -149,7 +149,7 @@ jobs:
     
     steps:
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: TimeTracker-Pro-Windows
         
