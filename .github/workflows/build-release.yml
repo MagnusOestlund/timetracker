@@ -1,0 +1,177 @@
+name: Build and Release TimeTracker Pro
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        
+    - name: Run tests
+      run: |
+        python test_timetracker.py
+        
+    - name: Build executable with PyInstaller
+      run: |
+        pyinstaller --onefile --windowed --name "TimeTracker-Pro" --icon=icon.ico main.py
+      continue-on-error: true
+      
+    - name: Build with cx_Freeze (fallback)
+      if: failure()
+      run: |
+        pip install cx_Freeze
+        python setup.py build_exe
+        
+    - name: Create portable package
+      run: |
+        # Create distribution directory
+        New-Item -ItemType Directory -Force -Path "TimeTracker-Pro-Portable"
+        
+        # Copy executable (try both possible locations)
+        if (Test-Path "dist/TimeTracker-Pro.exe") {
+          Copy-Item "dist/TimeTracker-Pro.exe" "TimeTracker-Pro-Portable/"
+        } elseif (Test-Path "build/exe.win-amd64-3.10/main.exe") {
+          Copy-Item "build/exe.win-amd64-3.10/main.exe" "TimeTracker-Pro-Portable/TimeTracker-Pro.exe"
+        }
+        
+        # Copy documentation and scripts
+        Copy-Item "README.md" "TimeTracker-Pro-Portable/"
+        Copy-Item "TESTING_GUIDE.md" "TimeTracker-Pro-Portable/"
+        Copy-Item "manual_build.md" "TimeTracker-Pro-Portable/"
+        Copy-Item "build.bat" "TimeTracker-Pro-Portable/"
+        Copy-Item "build.ps1" "TimeTracker-Pro-Portable/"
+        Copy-Item "run_tests.bat" "TimeTracker-Pro-Portable/"
+        Copy-Item "run_tests.ps1" "TimeTracker-Pro-Portable/"
+        
+        # Create a simple run script
+        @"
+        @echo off
+        echo Starting TimeTracker Pro...
+        TimeTracker-Pro.exe
+        "@ | Out-File -FilePath "TimeTracker-Pro-Portable/Run-TimeTracker.bat" -Encoding ASCII
+        
+        # Create installation instructions
+        @"
+        # TimeTracker Pro - Portable Installation
+        
+        ## Quick Start
+        1. Extract this zip file to any folder
+        2. Double-click 'TimeTracker-Pro.exe' to run the application
+        3. Or use 'Run-TimeTracker.bat' for a more user-friendly startup
+        
+        ## What's Included
+        - TimeTracker-Pro.exe - The main application
+        - README.md - Complete documentation
+        - TESTING_GUIDE.md - Testing instructions
+        - Build scripts for developers
+        
+        ## System Requirements
+        - Windows 10/11
+        - No Python installation required
+        - ~50MB RAM when running
+        
+        ## Data Location
+        Your time tracking data will be saved in the same folder as the executable:
+        - config.json - Application settings
+        - work_hours.json - Your time tracking data
+        - backups/ - Automatic backups
+        
+        ## Support
+        Visit: https://github.com/MagnusOestlund/timetracker
+        "@ | Out-File -FilePath "TimeTracker-Pro-Portable/INSTALL.md" -Encoding UTF8
+        
+    - name: Create zip file
+      run: |
+        Compress-Archive -Path "TimeTracker-Pro-Portable/*" -DestinationPath "TimeTracker-Pro-Windows.zip"
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: TimeTracker-Pro-Windows
+        path: TimeTracker-Pro-Windows.zip
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          TimeTracker-Pro-Windows.zip
+        body: |
+          ## TimeTracker Pro Release
+          
+          ### 🚀 What's New
+          - Professional time tracking application
+          - Modern UI with menu bar and quick actions
+          - Comprehensive backup and data management
+          - 28 comprehensive tests ensuring reliability
+          
+          ### 📦 Downloads
+          - **TimeTracker-Pro-Windows.zip** - Complete portable application for Windows
+          
+          ### 🛠️ Installation
+          1. Download the zip file
+          2. Extract to any folder
+          3. Run `TimeTracker-Pro.exe`
+          
+          ### 📋 System Requirements
+          - Windows 10/11
+          - No additional software required
+          - ~50MB RAM usage
+          
+          ### 🔗 Links
+          - [Documentation](https://github.com/MagnusOestlund/timetracker#readme)
+          - [Source Code](https://github.com/MagnusOestlund/timetracker)
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-executable:
+    needs: build-windows
+    runs-on: windows-latest
+    
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: TimeTracker-Pro-Windows
+        
+    - name: Extract and test
+      run: |
+        Expand-Archive -Path "TimeTracker-Pro-Windows.zip" -DestinationPath "test-extract"
+        
+        # Check if executable exists
+        if (Test-Path "test-extract/TimeTracker-Pro.exe") {
+          Write-Host "✅ Executable found and ready for distribution"
+        } else {
+          Write-Host "❌ Executable not found"
+          exit 1
+        }
+        
+        # Check file size (should be reasonable)
+        $exe = Get-Item "test-extract/TimeTracker-Pro.exe"
+        $sizeKB = [math]::Round($exe.Length / 1KB, 2)
+        Write-Host "📦 Executable size: $sizeKB KB"
+        
+        if ($exe.Length -lt 1MB) {
+          Write-Host "⚠️  Warning: Executable seems small, may be missing dependencies"
+        } else {
+          Write-Host "✅ Executable size looks good"
+        } 

@@ -53,7 +53,18 @@ A professional desktop time tracking application built with Python and Tkinter. 
 
 ## 🛠️ Installation
 
-### Option 1: Run from Source
+### Option 1: Download Pre-built Executable (Recommended)
+```bash
+# Visit the releases page and download the latest version
+# https://github.com/MagnusOestlund/timetracker/releases
+
+1. Go to the GitHub releases page
+2. Download "TimeTracker-Pro-Windows.zip"
+3. Extract the zip file to any folder
+4. Run "TimeTracker-Pro.exe"
+```
+
+### Option 2: Run from Source
 ```bash
 # Clone the repository
 git clone https://github.com/MagnusOestlund/timetracker.git
@@ -63,7 +74,7 @@ cd timetracker
 python main.py
 ```
 
-### Option 2: Build Executable
+### Option 3: Build Executable Yourself
 ```bash
 # Install PyInstaller
 pip install pyinstaller
@@ -192,6 +203,7 @@ The application includes automated build scripts that handle:
 - **SSL certificate issues** in corporate environments
 - **Fallback options** if primary tools fail
 - **Clean output** with success/failure reporting
+- **Automated GitHub releases** with pre-built executables
 
 ## 📊 Data Format
 
@@ -270,9 +282,10 @@ The modular design makes it easy to add:
 ### Common Issues
 
 #### **Application Won't Start**
-- Verify Python 3.7+ is installed
-- Check that tkinter is available: `python -c "import tkinter"`
-- Ensure you're in the correct directory
+- **Pre-built executable**: Ensure you have Windows 10/11 and extracted the full zip
+- **From source**: Verify Python 3.7+ is installed
+- **Check tkinter**: `python -c "import tkinter"`
+- **Ensure correct directory**: Navigate to the application folder
 
 #### **Timer Not Working**
 - Verify project name is entered (required field)
@@ -284,17 +297,18 @@ The modular design makes it easy to add:
 - Verify disk space is available
 - Look for error messages in the status bar
 
-#### **Build Failures**
-- Run build scripts as administrator
-- Check internet connectivity for package downloads
-- Try alternative build methods (cx_Freeze if PyInstaller fails)
+#### **Download Issues**
+- **Slow download**: GitHub releases are hosted on CDN, try again later
+- **Blocked download**: Some antivirus software may flag new executables
+- **Extraction problems**: Use Windows built-in zip extraction or 7-Zip
 
 ### Getting Help
 1. Check the **status bar** for error messages (⚠️ icon)
 2. Use the **❓ Help** button or menu for application information
 3. Review the **TESTING_GUIDE.md** for detailed troubleshooting
-4. Run the **test suite** to verify functionality
+4. Run the **test suite** to verify functionality (source version)
 5. Check **file permissions** and disk space
+6. **Report issues** on the GitHub repository
 
 ## 📈 Performance
 
@@ -368,4 +382,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **TimeTracker Pro** - Professional time tracking made simple. Track your productivity, analyze your work patterns, and take control of your time management with this powerful, privacy-focused desktop application featuring a modern, intuitive interface.
 
-*Built with ❤️ using Python and Tkinter* 
+*Built with ❤️ using Python and Tkinter*
