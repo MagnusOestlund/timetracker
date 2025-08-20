@@ -11,7 +11,7 @@ class TimeTrackerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("⏱️ TimeTracker Pro")
-        self.root.geometry("620x620")
+        self.root.geometry("900x800")
         self.root.configure(bg="#FAFBFC")
         
         # Modern color palette
@@ -43,6 +43,8 @@ class TimeTrackerApp:
         self.config_file = 'config.json'
         self.data_file = 'work_hours.json'
         self.backup_dir = 'backups'
+        self.projects_file = 'projects.json'
+        self.invoice_rates_file = 'invoice_rates.json'
         
         # Load configuration
         self.load_config()
@@ -55,6 +57,15 @@ class TimeTrackerApp:
         self.is_running = False
         self.is_paused = False
         self.timer_after_id = None
+        
+        # Project management
+        self.projects = []
+        self.current_project_id = None
+        self.invoice_rates = {}
+        
+        # Load projects and invoice rates
+        self.load_projects()
+        self.load_invoice_rates()
 
         # Modern typography
         self.fonts = {
@@ -73,9 +84,36 @@ class TimeTrackerApp:
         # Create menu bar
         self.create_menu_bar()
         
-        # Main container with padding
-        main_frame = tk.Frame(self.root, bg=self.colors['bg_primary'], padx=25, pady=25)
-        main_frame.pack(expand=True, fill="both")
+        # Main container with scrollbar
+        main_container = tk.Frame(self.root, bg=self.colors['bg_primary'])
+        main_container.pack(fill="both", expand=True)
+        
+        # Create canvas and scrollbar
+        canvas = tk.Canvas(main_container, bg=self.colors['bg_primary'], highlightthickness=0)
+        scrollbar = tk.Scrollbar(main_container, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.colors['bg_primary'])
+        
+        # Configure scrolling
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack canvas and scrollbar
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Main content frame with padding
+        main_frame = tk.Frame(scrollable_frame, bg=self.colors['bg_primary'], padx=25, pady=25)
+        main_frame.pack(fill="both", expand=True)
+
+        # Bind mousewheel to canvas
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
         # Title section
         title_frame = tk.Frame(main_frame, bg=self.colors['bg_primary'])
@@ -96,12 +134,6 @@ class TimeTrackerApp:
         # Timer controls card
         self.create_timer_controls(main_frame)
         
-        # Quick actions card
-        self.create_quick_actions(main_frame)
-        
-        # Settings card
-        self.create_settings_card(main_frame)
-        
         # Status section
         self.create_status_section(main_frame)
 
@@ -121,6 +153,7 @@ class TimeTrackerApp:
         file_menu.add_command(label="📥 Import from CSV", command=self.import_from_csv)
         file_menu.add_separator()
         file_menu.add_command(label="💾 Create Backup", command=self.manual_backup)
+        file_menu.add_command(label="💾 Quick Backup", command=self.manual_backup)
         file_menu.add_command(label="🔄 Restore from Backup", command=self.restore_from_backup)
         file_menu.add_separator()
         file_menu.add_command(label="❌ Exit", command=self.root.quit)
@@ -134,6 +167,8 @@ class TimeTrackerApp:
         # Tools Menu
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="🛠️ Tools", menu=tools_menu)
+        tools_menu.add_command(label="📋 Project Management", command=self.show_project_manager)
+        tools_menu.add_command(label="💰 Invoice Rates", command=self.show_invoice_rates)
         tools_menu.add_command(label="⚙️ Data Management", command=self.import_export_dialog)
         tools_menu.add_command(label="🔧 Settings", command=self.show_settings)
         
@@ -141,76 +176,6 @@ class TimeTrackerApp:
         help_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="❓ Help", menu=help_menu)
         help_menu.add_command(label="📖 About", command=self.show_about)
-
-    def create_quick_actions(self, parent):
-        """Create the quick actions section"""
-        card = self.create_card_frame(parent, "🚀 Quick Actions")
-        card.pack(fill="x", pady=(0, 15))
-        
-        content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
-        content_frame.pack(fill="x")
-
-        # First row of buttons
-        row1_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
-        row1_frame.pack(pady=(0, 10))
-
-        self.create_modern_button(
-            row1_frame, 
-            "📋 View Entries", 
-            self.view_entries,
-            bg_color=self.colors['info'],
-            hover_color='#2563EB',
-            width=18
-        ).pack(side=tk.LEFT, padx=(0, 10))
-
-        self.create_modern_button(
-            row1_frame, 
-            "📊 Reports", 
-            self.show_reports,
-            bg_color=self.colors['pause'],
-            hover_color=self.colors['pause_hover'],
-            width=18
-        ).pack(side=tk.LEFT, padx=(0, 10))
-
-        self.create_modern_button(
-            row1_frame, 
-            "📁 Data Tools", 
-            self.import_export_dialog,
-            bg_color=self.colors['accent'],
-            hover_color=self.colors['accent_hover'],
-            width=18
-        ).pack(side=tk.LEFT)
-
-        # Second row of buttons
-        row2_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
-        row2_frame.pack()
-
-        self.create_modern_button(
-            row2_frame, 
-            "⚙️ Settings", 
-            self.show_settings,
-            bg_color=self.colors['text_secondary'],
-            hover_color=self.colors['text_primary'],
-            width=18
-        ).pack(side=tk.LEFT, padx=(0, 10))
-
-        self.create_modern_button(
-            row2_frame, 
-            "💾 Quick Backup", 
-            self.manual_backup,
-            bg_color=self.colors['secondary'],
-            hover_color=self.colors['secondary_hover'],
-            width=18
-        ).pack(side=tk.LEFT, padx=(0, 10))
-
-        self.create_modern_button(
-            row2_frame, 
-            "❓ Help", 
-            self.show_about,
-            bg_color=self.colors['warning'],
-            hover_color=self.colors['accent_hover'],
-            width=18
-        ).pack(side=tk.LEFT)
 
     def create_card_frame(self, parent, title=None):
         """Create a modern card-style frame"""
@@ -237,7 +202,68 @@ class TimeTrackerApp:
         content_frame = tk.Frame(card, bg=self.colors['bg_card'], padx=20, pady=20)
         content_frame.pack(fill="x")
 
-        # Project Name
+        # Project Selection
+        project_selection_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
+        project_selection_frame.pack(fill="x", pady=(0, 15))
+
+        tk.Label(
+            project_selection_frame, 
+            text="Select Project *", 
+            bg=self.colors['bg_card'], 
+            fg=self.colors['text_secondary'], 
+            font=self.fonts['body']
+        ).pack(anchor="w", pady=(0, 5))
+
+        # Project selector frame
+        selector_frame = tk.Frame(project_selection_frame, bg=self.colors['bg_card'])
+        selector_frame.pack(fill="x")
+
+        # Project dropdown
+        self.project_var = tk.StringVar()
+        self.project_dropdown = ttk.Combobox(
+            selector_frame,
+            textvariable=self.project_var,
+            state="readonly",
+            font=self.fonts['body'],
+            width=40
+        )
+        self.project_dropdown.pack(side=tk.LEFT, fill="x", expand=True, padx=(0, 10))
+        
+        # Update project list
+        self.update_project_dropdown()
+        
+        # Bind selection change
+        self.project_dropdown.bind('<<ComboboxSelected>>', self.on_project_selected)
+
+        # Project management buttons
+        self.create_modern_button(
+            selector_frame,
+            "➕ New",
+            self.show_project_manager,
+            bg_color=self.colors['secondary'],
+            hover_color=self.colors['secondary_hover'],
+            width=8
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        self.create_modern_button(
+            selector_frame,
+            "✏️ Edit",
+            self.show_project_manager,
+            bg_color=self.colors['info'],
+            hover_color='#2563EB',
+            width=8
+        ).pack(side=tk.LEFT, padx=(0, 5))
+
+        self.create_modern_button(
+            selector_frame,
+            "💰 Rates",
+            self.show_invoice_rates,
+            bg_color=self.colors['accent'],
+            hover_color=self.colors['accent_hover'],
+            width=8
+        ).pack(side=tk.LEFT)
+
+        # Project Name (for backward compatibility and editing)
         tk.Label(
             content_frame, 
             text="Project Name *", 
@@ -341,6 +367,24 @@ class TimeTrackerApp:
             state=tk.DISABLED
         )
         self.stop_button.pack(side=tk.LEFT)
+
+        # Invoiced toggle - REMOVED per user request
+        # invoiced_frame = tk.Frame(content_frame, bg=self.colors['bg_card'])
+        # invoiced_frame.pack(pady=(15, 0))
+        # 
+        # self.invoiced_var = tk.BooleanVar(value=False)
+        # invoiced_checkbox = tk.Checkbutton(
+        #     invoiced_frame,
+        #     text="💰 Mark as Invoiced",
+        #     variable=self.invoiced_var,
+        #     bg=self.colors['bg_card'],
+        #     fg=self.colors['text_primary'],
+        #     font=self.fonts['body'],
+        #     activebackground=self.colors['bg_card'],
+        #     selectcolor=self.colors['bg_card'],
+        #     anchor="w"
+        # )
+        # invoiced_checkbox.pack()
 
     def create_settings_card(self, parent):
         """Create the settings section"""
@@ -459,10 +503,83 @@ class TimeTrackerApp:
         except Exception as e:
             self.log_error(f"Failed to save config: {e}")
 
+    def load_projects(self):
+        """Load projects from file"""
+        try:
+            if os.path.exists(self.projects_file):
+                with open(self.projects_file, 'r', encoding='utf-8') as f:
+                    self.projects = json.load(f)
+                    if not isinstance(self.projects, list):
+                        self.projects = []
+            else:
+                # Create default project if none exist
+                self.projects = [{
+                    'id': 'default',
+                    'name': 'Default Project',
+                    'status': 'Active',
+                    'invoice': 'No',
+                    'description': 'Default project for time tracking'
+                }]
+                self.save_projects()
+        except Exception as e:
+            self.log_error(f"Failed to load projects: {e}")
+            self.projects = []
+
+    def save_projects(self):
+        """Save projects to file"""
+        try:
+            with open(self.projects_file, 'w', encoding='utf-8') as f:
+                json.dump(self.projects, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            self.log_error(f"Failed to save projects: {e}")
+
+    def load_invoice_rates(self):
+        """Load invoice rates from file"""
+        try:
+            if os.path.exists(self.invoice_rates_file):
+                with open(self.invoice_rates_file, 'r', encoding='utf-8') as f:
+                    self.invoice_rates = json.load(f)
+                    if not isinstance(self.invoice_rates, dict):
+                        self.invoice_rates = {}
+            else:
+                # Create default invoice rates
+                self.invoice_rates = {
+                    'default': {
+                        'rate': 50.0,
+                        'currency': 'USD'
+                    }
+                }
+                self.save_invoice_rates()
+        except Exception as e:
+            self.log_error(f"Failed to load invoice rates: {e}")
+            self.invoice_rates = {}
+
+    def save_invoice_rates(self):
+        """Save invoice rates to file"""
+        try:
+            with open(self.invoice_rates_file, 'w', encoding='utf-8') as f:
+                json.dump(self.invoice_rates, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            self.log_error(f"Failed to save invoice rates: {e}")
+
+    def get_project_by_id(self, project_id):
+        """Get project by ID"""
+        for project in self.projects:
+            if project.get('id') == project_id:
+                return project
+        return None
+
+    def get_current_project(self):
+        """Get current selected project"""
+        if self.current_project_id:
+            return self.get_project_by_id(self.current_project_id)
+        return None
+
     def toggle_auto_backup(self):
         """Toggle auto-backup setting"""
-        self.config['auto_backup'] = self.auto_backup.get()
-        self.save_config()
+        if hasattr(self, 'auto_backup') and self.auto_backup:
+            self.config['auto_backup'] = self.auto_backup.get()
+            self.save_config()
 
     # -------------------------------
     # Helpers
@@ -476,9 +593,10 @@ class TimeTrackerApp:
 
     def toggle_always_on_top(self):
         """Toggle always-on-top setting"""
-        self.root.attributes("-topmost", self.always_on_top.get())
-        self.config['always_on_top'] = self.always_on_top.get()
-        self.save_config()
+        if hasattr(self, 'always_on_top') and self.always_on_top:
+            self.root.attributes("-topmost", self.always_on_top.get())
+            self.config['always_on_top'] = self.always_on_top.get()
+            self.save_config()
 
     def schedule_tick(self):
         # ensure only one scheduled callback alive
@@ -563,7 +681,7 @@ class TimeTrackerApp:
                 json.dump(data, f, indent=4, ensure_ascii=False)
             
             # Auto-backup if enabled
-            if self.auto_backup.get():
+            if self.config.get('auto_backup', True):
                 self.auto_backup_data()
                 
         except Exception as e:
@@ -618,6 +736,9 @@ class TimeTrackerApp:
         self.start_button.config(state=tk.DISABLED, bg=self.colors['text_muted'])
         self.stop_button.config(state=tk.NORMAL, bg=self.colors['danger'])
         self.pause_button.config(state=tk.NORMAL, text="⏸ Pause", bg=self.colors['pause'])
+        
+        # Reset invoiced checkbox - REMOVED since checkbox was removed
+        # self.invoiced_var.set(False)
 
         # Start ticking
         self.update_elapsed_time()
@@ -667,6 +788,8 @@ class TimeTrackerApp:
             "stop_time": stop_time.strftime("%Y-%m-%d %H:%M:%S"),
             "duration": duration_str,
             "duration_seconds": int(total_seconds),
+            "invoiced": "No",  # Default to not invoiced
+            "project_id": self.current_project_id  # Store project ID for reference
         }
 
         # Load existing data and append new record
@@ -694,7 +817,7 @@ class TimeTrackerApp:
     def view_entries(self):
         entries_window = tk.Toplevel(self.root)
         entries_window.title("📋 View & Edit Entries")
-        entries_window.geometry("850x650")
+        entries_window.geometry("850x750")
         entries_window.configure(bg=self.colors['bg_primary'])
 
         # Load data
@@ -720,25 +843,239 @@ class TimeTrackerApp:
         list_frame = tk.Frame(content_card, bg=self.colors['bg_card'])
         list_frame.pack(pady=20, padx=20, fill="both", expand=True)
 
-        scrollbar = tk.Scrollbar(list_frame, bg=self.colors['bg_secondary'])
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        # Filter options
+        filter_frame = tk.Frame(list_frame, bg=self.colors['bg_card'])
+        filter_frame.pack(fill="x", pady=(0, 10))
+        
+        # Date filter section
+        date_filter_frame = tk.Frame(filter_frame, bg=self.colors['bg_card'])
+        date_filter_frame.pack(fill="x", pady=(0, 10))
+        
+        # From date
+        from_date_frame = tk.Frame(date_filter_frame, bg=self.colors['bg_card'])
+        from_date_frame.pack(side=tk.LEFT, padx=(0, 15))
+        
+        tk.Label(
+            from_date_frame, 
+            text="From:", 
+            bg=self.colors['bg_card'], 
+            fg=self.colors['text_secondary'], 
+            font=self.fonts['body']
+        ).pack(side=tk.LEFT, padx=(0, 5))
+        
+        from_date_var = tk.StringVar()
+        from_date_entry = tk.Entry(
+            from_date_frame,
+            textvariable=from_date_var,
+            width=12,
+            font=self.fonts['body'],
+            relief="solid",
+            bd=1
+        )
+        from_date_entry.pack(side=tk.LEFT)
+        from_date_entry.insert(0, "YYYY-MM-DD")
+        
+        # To date
+        to_date_frame = tk.Frame(date_filter_frame, bg=self.colors['bg_card'])
+        to_date_frame.pack(side=tk.LEFT, padx=(0, 15))
+        
+        tk.Label(
+            to_date_frame, 
+            text="To:", 
+            bg=self.colors['bg_card'], 
+            fg=self.colors['text_secondary'], 
+            font=self.fonts['body']
+        ).pack(side=tk.LEFT, padx=(0, 5))
+        
+        to_date_var = tk.StringVar()
+        to_date_entry = tk.Entry(
+            to_date_frame,
+            textvariable=to_date_var,
+            width=12,
+            font=self.fonts['body'],
+            relief="solid",
+            bd=1
+        )
+        to_date_entry.pack(side=tk.LEFT)
+        to_date_entry.insert(0, "YYYY-MM-DD")
+        
+        # Clear dates button
+        clear_dates_button = self.create_modern_button(
+            date_filter_frame,
+            "🗑️ Clear",
+            lambda: self.clear_date_filters(from_date_var, to_date_var),
+            bg_color=self.colors['text_secondary'],
+            hover_color=self.colors['text_primary'],
+            width=8
+        )
+        clear_dates_button.pack(side=tk.LEFT, padx=(0, 15))
+        
+        # Status filter
+        status_filter_frame = tk.Frame(filter_frame, bg=self.colors['bg_card'])
+        status_filter_frame.pack(fill="x", pady=(0, 10))
+        
+        tk.Label(
+            status_filter_frame, 
+            text="Status:", 
+            bg=self.colors['bg_card'], 
+            fg=self.colors['text_secondary'], 
+            font=self.fonts['body']
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        filter_var = tk.StringVar(value="All")
+        filter_combo = ttk.Combobox(
+            status_filter_frame, 
+            textvariable=filter_var, 
+            values=["All", "Invoiced", "Not Invoiced"], 
+            state="readonly", 
+            font=self.fonts['body'],
+            width=15
+        )
+        filter_combo.pack(side=tk.LEFT)
+        
+        # Apply filter button (will be configured after listbox is created)
+        filter_button = self.create_modern_button(
+            status_filter_frame,
+            "🔄 Apply",
+            lambda: None,  # Placeholder
+            bg_color=self.colors['info'],
+            hover_color='#2563EB',
+            width=8
+        )
+        filter_button.pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Multiple selection instructions
+        instruction_frame = tk.Frame(list_frame, bg=self.colors['bg_card'])
+        instruction_frame.pack(fill="x", pady=(0, 10))
+        
+        tk.Label(
+            instruction_frame, 
+            text="💡 Tip: Use Ctrl+Click or Shift+Click to select multiple entries for bulk operations", 
+            bg=self.colors['bg_card'], 
+            fg=self.colors['text_secondary'], 
+            font=self.fonts['small']
+        ).pack(anchor="w")
 
+        # Listbox
         listbox = tk.Listbox(
             list_frame, 
             width=120, 
             height=18, 
             font=self.fonts['body'], 
-            yscrollcommand=scrollbar.set,
             bg=self.colors['bg_card'],
             fg=self.colors['text_primary'],
             selectbackground=self.colors['primary'],
             selectforeground='white',
             relief='flat',
             bd=0,
-            highlightthickness=0
+            highlightthickness=0,
+            selectmode=tk.EXTENDED  # Enable multiple selection
         )
         listbox.pack(side=tk.LEFT, fill="both", expand=True)
+        
+        # Create scrollbar after listbox
+        scrollbar = tk.Scrollbar(list_frame, bg=self.colors['bg_secondary'])
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Configure scrollbar and listbox
+        listbox.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=listbox.yview)
+
+        def refresh_listbox_with_fresh_data():
+            """Refresh the listbox with fresh data from file"""
+            try:
+                # Always load fresh data from file
+                fresh_data = self.load_data()
+                
+                # Clear current entries
+                listbox.delete(0, tk.END)
+                
+                # Repopulate with fresh data
+                for i, entry in enumerate(fresh_data):
+                    proj = entry.get('project', '')
+                    st = entry.get('start_time', '')
+                    et = entry.get('stop_time', '')
+                    dur = entry.get('duration') or self.format_seconds(entry.get('duration_seconds', 0))
+                    memo_snippet = truncate(entry.get('memo', ''), 30)
+                    invoiced_status = entry.get('invoiced', 'No')
+                    invoiced_icon = "💰" if invoiced_status == "Yes" else "📝"
+                    listbox.insert(tk.END, f"{i+1}. {proj} | {st} - {et} | {dur} | {invoiced_icon} {invoiced_status} | 📝 {memo_snippet}")
+                    
+            except Exception as e:
+                self.log_error(f"Failed to refresh listbox: {e}")
+
+        def apply_filter():
+            """Apply the selected filter to the listbox"""
+            try:
+                filter_value = filter_var.get()
+                from_date = from_date_var.get().strip()
+                to_date = to_date_var.get().strip()
+                
+                listbox.delete(0, tk.END)
+                
+                # Always use fresh data for filtering
+                fresh_data = self.load_data()
+                filtered_data = []
+                
+                # First filter by status
+                if filter_value == "All":
+                    status_filtered = fresh_data
+                elif filter_value == "Invoiced":
+                    status_filtered = [entry for entry in fresh_data if entry.get('invoiced') == 'Yes']
+                elif filter_value == "Not Invoiced":
+                    status_filtered = [entry for entry in fresh_data if entry.get('invoiced') != 'Yes']
+                else:
+                    status_filtered = fresh_data
+                
+                # Then filter by date range if specified
+                if from_date or to_date:
+                    for entry in status_filtered:
+                        try:
+                            entry_date = datetime.strptime(entry.get('start_time', ''), "%Y-%m-%d %H:%M:%S").date()
+                            
+                            # Check from date
+                            if from_date:
+                                try:
+                                    from_date_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
+                                    if entry_date < from_date_obj:
+                                        continue
+                                except ValueError:
+                                    pass  # Invalid date format, skip this filter
+                            
+                            # Check to date
+                            if to_date:
+                                try:
+                                    to_date_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
+                                    if entry_date > to_date_obj:
+                                        continue
+                                except ValueError:
+                                    pass  # Invalid date format, skip this filter
+                            
+                            filtered_data.append(entry)
+                        except (ValueError, TypeError):
+                            # If date parsing fails, include the entry
+                            filtered_data.append(entry)
+                else:
+                    # No date filtering, use status filtered data
+                    filtered_data = status_filtered
+                
+                # Populate with filtered data
+                for i, entry in enumerate(filtered_data):
+                    proj = entry.get('project', '')
+                    st = entry.get('start_time', '')
+                    et = entry.get('stop_time', '')
+                    dur = entry.get('duration') or self.format_seconds(entry.get('duration_seconds', 0))
+                    memo_snippet = truncate(entry.get('memo', ''), 30)
+                    invoiced_status = entry.get('invoiced', 'No')
+                    invoiced_icon = "💰" if invoiced_status == "Yes" else "📝"
+                    listbox.insert(tk.END, f"{i+1}. {proj} | {st} - {et} | {dur} | {invoiced_icon} {invoiced_status} | 📝 {memo_snippet}")
+                    
+            except Exception as e:
+                self.log_error(f"Failed to apply filter: {e}")
+        
+        # Now configure the filter functionality
+        filter_combo.bind('<<ComboboxSelected>>', lambda e: apply_filter())
+        filter_button.config(command=apply_filter)
 
         def truncate(text, length=40):
             text = text or ""
@@ -751,7 +1088,9 @@ class TimeTrackerApp:
             et = entry.get('stop_time', '')
             dur = entry.get('duration') or self.format_seconds(entry.get('duration_seconds', 0))
             memo_snippet = truncate(entry.get('memo', ''), 30)
-            listbox.insert(tk.END, f"{i+1}. {proj} | {st} - {et} | {dur} | 📝 {memo_snippet}")
+            invoiced_status = entry.get('invoiced', 'No')
+            invoiced_icon = "💰" if invoiced_status == "Yes" else "📝"
+            listbox.insert(tk.END, f"{i+1}. {proj} | {st} - {et} | {dur} | {invoiced_icon} {invoiced_status} | 📝 {memo_snippet}")
 
         # Buttons frame
         buttons_frame = tk.Frame(content_card, bg=self.colors['bg_card'], pady=20)
@@ -763,8 +1102,18 @@ class TimeTrackerApp:
                 messagebox.showwarning("No Selection", "Please select an entry to edit.")
                 return
 
+            # For editing, we only work with the first selected entry
             index = selected[0]
-            entry = data[index]
+            # Get fresh data for editing
+            fresh_data = self.load_data()
+            if index >= len(fresh_data):
+                messagebox.showerror("Error", "Entry no longer exists.")
+                return
+            entry = fresh_data[index]
+            
+            # Show info if multiple entries were selected
+            if len(selected) > 1:
+                messagebox.showinfo("Multiple Selection", f"Multiple entries selected ({len(selected)}). Only the first entry will be edited.")
 
             edit_window = tk.Toplevel(entries_window)
             edit_window.title("✏️ Edit Entry")
@@ -846,6 +1195,27 @@ class TimeTrackerApp:
             memo_box.grid(row=len(fields), column=1, sticky="w", pady=8)
             entries_widgets["memo"] = memo_box
 
+            # Invoiced status
+            tk.Label(
+                form_frame, 
+                text="Invoiced", 
+                bg=self.colors['bg_card'], 
+                fg=self.colors['text_secondary'], 
+                font=self.fonts['body']
+            ).grid(row=len(fields)+1, column=0, sticky="w", padx=(0, 15), pady=8)
+            
+            invoiced_var = tk.StringVar(value=entry.get("invoiced", "No"))
+            invoiced_combo = ttk.Combobox(
+                form_frame, 
+                textvariable=invoiced_var, 
+                values=["Yes", "No"], 
+                state="readonly", 
+                font=self.fonts['body'],
+                width=37
+            )
+            invoiced_combo.grid(row=len(fields)+1, column=1, sticky="w", pady=8)
+            entries_widgets["invoiced"] = invoiced_var
+
             def save_changes():
                 # Validate time format
                 duration_str = entries_widgets["duration"].get().strip()
@@ -853,34 +1223,44 @@ class TimeTrackerApp:
                     messagebox.showerror("Invalid Format", "Duration must be in HH:MM:SS or MM:SS format")
                     return
 
+                # Get fresh data and update
+                fresh_data = self.load_data()
+                if index >= len(fresh_data):
+                    messagebox.showerror("Error", "Entry no longer exists.")
+                    return
+
                 # Update string fields
                 for field in fields:
-                    entry[field] = entries_widgets[field].get()
+                    fresh_data[index][field] = entries_widgets[field].get()
                 # Update memo
-                entry["memo"] = entries_widgets["memo"].get("1.0", "end-1c")
+                fresh_data[index]["memo"] = entries_widgets["memo"].get("1.0", "end-1c")
+                # Update invoiced status
+                fresh_data[index]["invoiced"] = entries_widgets["invoiced"].get()
 
                 # Try to sync duration_seconds if possible
-                entry["duration_seconds"] = self._parse_duration_to_seconds(duration_str)
+                fresh_data[index]["duration_seconds"] = self._parse_duration_to_seconds(duration_str)
 
-                data[index] = entry
-                self.save_data(data)
+                self.save_data(fresh_data)
                 messagebox.showinfo("Saved", "Entry updated successfully.")
                 edit_window.destroy()
-                entries_window.destroy()
-                self.view_entries()
+                # Refresh the listbox with fresh data
+                refresh_listbox_with_fresh_data()
 
             def delete_entry():
                 if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this entry?"):
-                    data.pop(index)
-                    self.save_data(data)
-                    messagebox.showinfo("Deleted", "Entry deleted successfully.")
-                    edit_window.destroy()
-                    entries_window.destroy()
-                    self.view_entries()
+                    # Get fresh data and delete
+                    fresh_data = self.load_data()
+                    if index < len(fresh_data):
+                        fresh_data.pop(index)
+                        self.save_data(fresh_data)
+                        messagebox.showinfo("Deleted", "Entry deleted successfully.")
+                        edit_window.destroy()
+                        # Refresh the listbox with fresh data
+                        refresh_listbox_with_fresh_data()
 
             # Save and Delete buttons
             button_frame = tk.Frame(form_frame, bg=self.colors['bg_card'])
-            button_frame.grid(row=len(fields)+1, column=0, columnspan=2, pady=20)
+            button_frame.grid(row=len(fields)+2, column=0, columnspan=2, pady=20)
             
             self.create_modern_button(
                 button_frame, 
@@ -906,22 +1286,42 @@ class TimeTrackerApp:
                 messagebox.showwarning("No Selection", "Please select an entry to delete.")
                 return
 
-            index = selected[0]
-            if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete entry {index+1}?"):
-                data.pop(index)
-                self.save_data(data)
-                messagebox.showinfo("Deleted", "Entry deleted successfully.")
-                entries_window.destroy()
-                self.view_entries()
+            # Handle multiple deletions
+            if len(selected) == 1:
+                index = selected[0]
+                if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete entry {index+1}?"):
+                    # Get fresh data and delete
+                    fresh_data = self.load_data()
+                    if index < len(fresh_data):
+                        fresh_data.pop(index)
+                        self.save_data(fresh_data)
+                        messagebox.showinfo("Deleted", "Entry deleted successfully.")
+                        edit_window.destroy()
+                        # Refresh the listbox with fresh data
+                        refresh_listbox_with_fresh_data()
+            else:
+                # Multiple deletions
+                count = len(selected)
+                if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete {count} selected entries?"):
+                    # Get fresh data and delete
+                    fresh_data = self.load_data()
+                    # Delete in reverse order to maintain indices
+                    for index in sorted(selected, reverse=True):
+                        if index < len(fresh_data):
+                            fresh_data.pop(index)
+                    self.save_data(fresh_data)
+                    messagebox.showinfo("Deleted", f"{count} entries deleted successfully.")
+                    # Refresh the listbox with fresh data
+                    refresh_listbox_with_fresh_data()
 
         # Action buttons with modern styling
         self.create_modern_button(
             buttons_frame, 
-            "✏️ Edit Selected", 
+            "✏️ Edit Selected (1st)", 
             edit_selected, 
             bg_color=self.colors['info'],
             hover_color='#2563EB',
-            width=15
+            width=18
         ).pack(side=tk.LEFT, padx=(0, 10))
         
         self.create_modern_button(
@@ -930,7 +1330,16 @@ class TimeTrackerApp:
             delete_selected, 
             bg_color=self.colors['danger'],
             hover_color=self.colors['danger_hover'],
-            width=15
+            width=18
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.create_modern_button(
+            buttons_frame, 
+            "💰 Mark Invoiced", 
+            self.mark_as_invoiced, 
+            bg_color=self.colors['accent'],
+            hover_color=self.colors['accent_hover'],
+            width=18
         ).pack(side=tk.LEFT, padx=(0, 10))
         
         self.create_modern_button(
@@ -985,6 +1394,76 @@ class TimeTrackerApp:
             fg=self.colors['text_primary'], 
             font=self.fonts['title']
         ).pack()
+        
+        # Date filter controls for reports
+        date_filter_frame = tk.Frame(header_frame, bg=self.colors['bg_primary'], pady=10)
+        date_filter_frame.pack()
+        
+        # From date
+        from_date_label = tk.Label(
+            date_filter_frame, 
+            text="From:", 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['text_secondary'], 
+            font=self.fonts['body']
+        )
+        from_date_label.pack(side=tk.LEFT, padx=(0, 5))
+        
+        reports_from_date_var = tk.StringVar()
+        reports_from_date_entry = tk.Entry(
+            date_filter_frame,
+            textvariable=reports_from_date_var,
+            width=12,
+            font=self.fonts['body'],
+            relief="solid",
+            bd=1
+        )
+        reports_from_date_entry.pack(side=tk.LEFT, padx=(0, 15))
+        reports_from_date_entry.insert(0, "YYYY-MM-DD")
+        
+        # To date
+        to_date_label = tk.Label(
+            date_filter_frame, 
+            text="To:", 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['text_secondary'], 
+            font=self.fonts['body']
+        )
+        to_date_label.pack(side=tk.LEFT, padx=(0, 5))
+        
+        reports_to_date_var = tk.StringVar()
+        reports_to_date_entry = tk.Entry(
+            date_filter_frame,
+            textvariable=reports_to_date_var,
+            width=12,
+            font=self.fonts['body'],
+            relief="solid",
+            bd=1
+        )
+        reports_to_date_entry.pack(side=tk.LEFT, padx=(0, 15))
+        reports_to_date_entry.insert(0, "YYYY-MM-DD")
+        
+        # Apply date filter button
+        apply_date_filter_button = self.create_modern_button(
+            date_filter_frame,
+            "🔄 Apply Date Filter",
+            lambda: self.apply_reports_date_filter(data, reports_from_date_var, reports_to_date_var),
+            bg_color=self.colors['info'],
+            hover_color='#2563EB',
+            width=15
+        )
+        apply_date_filter_button.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Clear date filter button
+        clear_reports_date_button = self.create_modern_button(
+            date_filter_frame,
+            "🗑️ Clear",
+            lambda: self.clear_reports_date_filters(reports_from_date_var, reports_to_date_var),
+            bg_color=self.colors['text_secondary'],
+            hover_color=self.colors['text_primary'],
+            width=8
+        )
+        clear_reports_date_button.pack(side=tk.LEFT)
 
         # Create notebook for different report types
         notebook = ttk.Notebook(reports_window)
@@ -994,10 +1473,42 @@ class TimeTrackerApp:
         summary_frame = tk.Frame(notebook, bg=self.colors['bg_card'])
         notebook.add(summary_frame, text="📈 Summary")
 
+        # Create scrollable frame for summary
+        summary_canvas = tk.Canvas(summary_frame, bg=self.colors['bg_card'], highlightthickness=0)
+        summary_scrollbar = tk.Scrollbar(summary_frame, orient="vertical", command=summary_canvas.yview)
+        summary_scrollable_frame = tk.Frame(summary_canvas, bg=self.colors['bg_card'])
+        
+        summary_scrollable_frame.bind(
+            "<Configure>",
+            lambda e: summary_canvas.configure(scrollregion=summary_canvas.bbox("all"))
+        )
+        
+        summary_canvas.create_window((0, 0), window=summary_scrollable_frame, anchor="nw")
+        summary_canvas.configure(yscrollcommand=summary_scrollbar.set)
+        
+        # Pack canvas and scrollbar
+        summary_canvas.pack(side="left", fill="both", expand=True)
+        summary_scrollbar.pack(side="right", fill="y")
+
+        # Bind mousewheel to summary canvas
+        def _on_summary_mousewheel(event):
+            try:
+                if summary_canvas.winfo_exists():
+                    summary_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            except:
+                pass
+        summary_canvas.bind_all("<MouseWheel>", _on_summary_mousewheel)
+
         # Calculate summary statistics
         total_entries = len(data)
         total_seconds = sum(entry.get('duration_seconds', 0) for entry in data)
         total_hours = total_seconds / 3600
+        
+        # Invoiced status breakdown
+        invoiced_seconds = sum(entry.get('duration_seconds', 0) for entry in data if entry.get('invoiced') == 'Yes')
+        not_invoiced_seconds = total_seconds - invoiced_seconds
+        invoiced_hours = invoiced_seconds / 3600
+        not_invoiced_hours = not_invoiced_seconds / 3600
         
         # Project breakdown
         project_totals = {}
@@ -1012,7 +1523,11 @@ class TimeTrackerApp:
 Total Entries: {total_entries}
 Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
 
-🏆 TOP PROJECTS:
+💰 INVOICING STATUS:
+• Invoiced: {self.format_seconds(invoiced_seconds)} ({invoiced_hours:.2f} hours)
+• Not Invoiced: {self.format_seconds(not_invoiced_seconds)} ({not_invoiced_hours:.2f} hours)
+
+📋 TOP PROJECTS:
 """
         
         # Sort projects by time
@@ -1022,7 +1537,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             summary_text += f"\n{i}. {project}: {self.format_seconds(duration)} ({hours:.2f} hours)"
 
         summary_label = tk.Label(
-            summary_frame, 
+            summary_scrollable_frame, 
             text=summary_text, 
             bg=self.colors['bg_card'], 
             fg=self.colors['text_primary'],
@@ -1034,6 +1549,32 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         # Weekly Report Tab
         weekly_frame = tk.Frame(notebook, bg=self.colors['bg_card'])
         notebook.add(weekly_frame, text="📅 Weekly")
+
+        # Create scrollable frame for weekly
+        weekly_canvas = tk.Canvas(weekly_frame, bg=self.colors['bg_card'], highlightthickness=0)
+        weekly_scrollbar = tk.Scrollbar(weekly_frame, orient="vertical", command=weekly_canvas.yview)
+        weekly_scrollable_frame = tk.Frame(weekly_canvas, bg=self.colors['bg_card'])
+        
+        weekly_scrollable_frame.bind(
+            "<Configure>",
+            lambda e: weekly_canvas.configure(scrollregion=weekly_canvas.bbox("all"))
+        )
+        
+        weekly_canvas.create_window((0, 0), window=weekly_scrollable_frame, anchor="nw")
+        weekly_canvas.configure(yscrollcommand=weekly_scrollbar.set)
+        
+        # Pack canvas and scrollbar
+        weekly_canvas.pack(side="left", fill="both", expand=True)
+        weekly_scrollbar.pack(side="right", fill="y")
+
+        # Bind mousewheel to weekly canvas
+        def _on_weekly_mousewheel(event):
+            try:
+                if weekly_canvas.winfo_exists():
+                    weekly_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            except:
+                pass
+        weekly_canvas.bind_all("<MouseWheel>", _on_weekly_mousewheel)
 
         # Calculate weekly totals for last 4 weeks
         weekly_text = "📅 WEEKLY BREAKDOWN (Last 4 weeks):\n\n"
@@ -1058,7 +1599,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             weekly_text += f"Week ending {week_end.strftime('%Y-%m-%d')}: {self.format_seconds(week_seconds)} ({week_hours:.2f} hours) - {len(week_entries)} entries\n"
 
         weekly_label = tk.Label(
-            weekly_frame, 
+            weekly_scrollable_frame, 
             text=weekly_text, 
             bg=self.colors['bg_card'], 
             fg=self.colors['text_primary'],
@@ -1066,6 +1607,96 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             justify=tk.LEFT
         )
         weekly_label.pack(pady=30, padx=30, anchor="w")
+
+        # Invoicing Report Tab
+        invoicing_frame = tk.Frame(notebook, bg=self.colors['bg_card'])
+        notebook.add(invoicing_frame, text="💰 Invoicing")
+
+        # Create scrollable frame for invoicing
+        invoicing_canvas = tk.Canvas(invoicing_frame, bg=self.colors['bg_card'], highlightthickness=0)
+        invoicing_scrollbar = tk.Scrollbar(invoicing_frame, orient="vertical", command=invoicing_canvas.yview)
+        invoicing_scrollable_frame = tk.Frame(invoicing_canvas, bg=self.colors['bg_card'])
+        
+        invoicing_scrollable_frame.bind(
+            "<Configure>",
+            lambda e: invoicing_canvas.configure(scrollregion=invoicing_canvas.bbox("all"))
+        )
+        
+        invoicing_canvas.create_window((0, 0), window=invoicing_scrollable_frame, anchor="nw")
+        invoicing_canvas.configure(yscrollcommand=invoicing_scrollbar.set)
+        
+        # Pack canvas and scrollbar
+        invoicing_canvas.pack(side="left", fill="both", expand=True)
+        invoicing_scrollbar.pack(side="right", fill="y")
+
+        # Bind mousewheel to invoicing canvas
+        def _on_invoicing_mousewheel(event):
+            try:
+                if invoicing_canvas.winfo_exists():
+                    invoicing_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            except:
+                pass
+        invoicing_canvas.bind_all("<MouseWheel>", _on_invoicing_mousewheel)
+
+        # Calculate invoicing statistics
+        invoiced_entries = [entry for entry in data if entry.get('invoiced') == 'Yes']
+        not_invoiced_entries = [entry for entry in data if entry.get('invoiced') != 'Yes']
+        
+        invoiced_seconds = sum(entry.get('duration_seconds', 0) for entry in invoiced_entries)
+        not_invoiced_seconds = sum(entry.get('duration_seconds', 0) for entry in not_invoiced_entries)
+        
+        invoiced_hours = invoiced_seconds / 3600
+        not_invoiced_hours = not_invoiced_seconds / 3600
+        
+        # Project invoicing breakdown
+        project_invoicing = {}
+        for entry in data:
+            project = entry.get('project', 'Unknown')
+            if project not in project_invoicing:
+                project_invoicing[project] = {'invoiced': 0, 'not_invoiced': 0}
+            
+            if entry.get('invoiced') == 'Yes':
+                project_invoicing[project]['invoiced'] += entry.get('duration_seconds', 0)
+            else:
+                project_invoicing[project]['not_invoiced'] += entry.get('duration_seconds', 0)
+
+        # Display invoicing report
+        invoicing_text = f"""💰 INVOICING REPORT
+
+📊 OVERVIEW:
+• Total Invoiced: {self.format_seconds(invoiced_seconds)} ({invoiced_hours:.2f} hours)
+• Total Not Invoiced: {self.format_seconds(not_invoiced_seconds)} ({not_invoiced_hours:.2f} hours)
+• Invoiced Entries: {len(invoiced_entries)}
+• Pending Entries: {len(not_invoiced_entries)}
+
+📋 PROJECT BREAKDOWN:
+"""
+        
+        # Sort projects by total time
+        sorted_projects = sorted(project_invoicing.items(), 
+                               key=lambda x: x[1]['invoiced'] + x[1]['not_invoiced'], 
+                               reverse=True)
+        
+        for project, stats in sorted_projects[:8]:  # Show top 8 projects
+            total_project_time = stats['invoiced'] + stats['not_invoiced']
+            total_project_hours = total_project_time / 3600
+            invoiced_project_hours = stats['invoiced'] / 3600
+            not_invoiced_project_hours = stats['not_invoiced'] / 3600
+            
+            invoicing_text += f"\n• {project}:"
+            invoicing_text += f"\n  - Total: {self.format_seconds(total_project_time)} ({total_project_hours:.2f} hours)"
+            invoicing_text += f"\n  - Invoiced: {self.format_seconds(stats['invoiced'])} ({invoiced_project_hours:.2f} hours)"
+            invoicing_text += f"\n  - Pending: {self.format_seconds(stats['not_invoiced'])} ({not_invoiced_project_hours:.2f} hours)"
+
+        invoicing_label = tk.Label(
+            invoicing_scrollable_frame, 
+            text=invoicing_text, 
+            bg=self.colors['bg_card'], 
+            fg=self.colors['text_primary'],
+            font=self.fonts['body'], 
+            justify=tk.LEFT
+        )
+        invoicing_label.pack(pady=30, padx=30, anchor="w")
 
         # Export button
         export_frame = tk.Frame(reports_window, bg=self.colors['bg_primary'], pady=10)
@@ -1162,7 +1793,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             
             if filename:
                 with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
-                    fieldnames = ['project', 'memo', 'start_time', 'stop_time', 'duration', 'duration_seconds']
+                    fieldnames = ['project', 'memo', 'start_time', 'stop_time', 'duration', 'duration_seconds', 'invoiced', 'project_id']
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     
                     writer.writeheader()
@@ -1238,6 +1869,11 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
                     for row in reader:
                         # Validate required fields
                         if row.get('project') and row.get('start_time'):
+                            # Ensure new fields exist with defaults
+                            if 'invoiced' not in row:
+                                row['invoiced'] = 'No'
+                            if 'project_id' not in row:
+                                row['project_id'] = None
                             imported_data.append(row)
                 
                 if imported_data:
@@ -1549,6 +2185,184 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             width=15
         ).pack()
 
+    def show_project_manager(self):
+        """Show the project management dialog"""
+        project_window = tk.Toplevel(self.root)
+        project_window.title("📋 Project Management")
+        project_window.geometry("700x500")
+        project_window.configure(bg=self.colors['bg_primary'])
+        
+        # Header
+        header_frame = tk.Frame(project_window, bg=self.colors['bg_primary'], pady=20)
+        header_frame.pack(fill="x")
+        
+        tk.Label(
+            header_frame, 
+            text="📋 Project Management", 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['text_primary'], 
+            font=self.fonts['title']
+        ).pack()
+
+        # Main content card
+        content_card = tk.Frame(project_window, bg=self.colors['bg_card'], relief='solid', bd=1)
+        content_card.pack(fill="both", expand=True, padx=25, pady=25)
+
+        # Projects list
+        list_frame = tk.Frame(content_card, bg=self.colors['bg_card'])
+        list_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Listbox with scrollbar
+        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.projects_listbox = tk.Listbox(
+            list_frame,
+            font=self.fonts['body'],
+            yscrollcommand=scrollbar.set,
+            bg=self.colors['bg_card'],
+            fg=self.colors['text_primary'],
+            selectbackground=self.colors['primary'],
+            selectforeground='white',
+            relief='flat',
+            bd=0,
+            highlightthickness=0
+        )
+        self.projects_listbox.pack(side=tk.LEFT, fill="both", expand=True)
+        scrollbar.config(command=self.projects_listbox.yview)
+
+        # Update projects list
+        self.update_projects_listbox()
+
+        # Buttons frame
+        buttons_frame = tk.Frame(content_card, bg=self.colors['bg_card'], pady=20)
+        buttons_frame.pack()
+
+        self.create_modern_button(
+            buttons_frame,
+            "➕ Add Project",
+            lambda: self.add_edit_project(),
+            bg_color=self.colors['secondary'],
+            hover_color=self.colors['secondary_hover'],
+            width=15
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            buttons_frame,
+            "✏️ Edit Project",
+            lambda: self.add_edit_project(self.get_selected_project()),
+            bg_color=self.colors['info'],
+            hover_color='#2563EB',
+            width=15
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            buttons_frame,
+            "🗑️ Delete Project",
+            self.delete_project,
+            bg_color=self.colors['danger'],
+            hover_color=self.colors['danger_hover'],
+            width=15
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            buttons_frame,
+            "✅ Close",
+            project_window.destroy,
+            bg_color=self.colors['text_secondary'],
+            hover_color=self.colors['text_primary'],
+            width=15
+        ).pack(side=tk.RIGHT)
+
+    def show_invoice_rates(self):
+        """Show the invoice rates dialog"""
+        rates_window = tk.Toplevel(self.root)
+        rates_window.title("💰 Invoice Rates")
+        rates_window.geometry("600x500")
+        rates_window.configure(bg=self.colors['bg_primary'])
+        
+        # Header
+        header_frame = tk.Frame(rates_window, bg=self.colors['bg_primary'], pady=20)
+        header_frame.pack(fill="x")
+        
+        tk.Label(
+            header_frame, 
+            text="💰 Invoice Rates", 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['text_primary'], 
+            font=self.fonts['title']
+        ).pack()
+
+        # Main content card
+        content_card = tk.Frame(rates_window, bg=self.colors['bg_card'], relief='solid', bd=1)
+        content_card.pack(fill="both", expand=True, padx=25, pady=25)
+
+        # Rates list
+        list_frame = tk.Frame(content_card, bg=self.colors['bg_card'])
+        list_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        # Listbox with scrollbar
+        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.rates_listbox = tk.Listbox(
+            list_frame,
+            font=self.fonts['body'],
+            yscrollcommand=scrollbar.set,
+            bg=self.colors['bg_card'],
+            fg=self.colors['text_primary'],
+            selectbackground=self.colors['primary'],
+            selectforeground='white',
+            relief='flat',
+            bd=0,
+            highlightthickness=0
+        )
+        self.rates_listbox.pack(side=tk.LEFT, fill="both", expand=True)
+        scrollbar.config(command=self.rates_listbox.yview)
+
+        # Update rates list
+        self.update_rates_listbox()
+
+        # Buttons frame
+        buttons_frame = tk.Frame(content_card, bg=self.colors['bg_card'], pady=20)
+        buttons_frame.pack()
+
+        self.create_modern_button(
+            buttons_frame,
+            "➕ Add Rate",
+            lambda: self.add_edit_rate(),
+            bg_color=self.colors['secondary'],
+            hover_color=self.colors['secondary_hover'],
+            width=15
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            buttons_frame,
+            "✏️ Edit Rate",
+            lambda: self.add_edit_rate(self.get_selected_rate()),
+            bg_color=self.colors['info'],
+            hover_color='#2563EB',
+            width=15
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            buttons_frame,
+            "🗑️ Delete Rate",
+            self.delete_rate,
+            bg_color=self.colors['danger'],
+            hover_color=self.colors['danger_hover'],
+            width=15
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        self.create_modern_button(
+            buttons_frame,
+            "✅ Close",
+            rates_window.destroy,
+            bg_color=self.colors['text_secondary'],
+            hover_color=self.colors['text_primary'],
+            width=15
+        ).pack(side=tk.RIGHT)
+
     # Utility to parse HH:MM:SS safely
     def _parse_duration_to_seconds(self, s: str) -> int:
         try:
@@ -1565,6 +2379,580 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             return h*3600 + m*60 + sec
         except Exception:
             return 0
+
+    def update_project_dropdown(self):
+        """Update the project dropdown with current projects"""
+        try:
+            # Filter only active projects
+            active_projects = [p for p in self.projects if p.get('status') == 'Active']
+            
+            # Create display names
+            project_names = [f"{p['name']} ({p['status']}, Invoice: {p['invoice']})" for p in active_projects]
+            
+            # Update dropdown
+            self.project_dropdown['values'] = project_names
+            
+            # Set current selection if available
+            if self.current_project_id:
+                current_project = self.get_current_project()
+                if current_project and current_project.get('status') == 'Active':
+                    current_name = f"{current_project['name']} ({current_project['status']}, Invoice: {current_project['invoice']})"
+                    if current_name in project_names:
+                        self.project_var.set(current_name)
+                        return
+            
+            # Set first active project if none selected
+            if project_names:
+                self.project_var.set(project_names[0])
+                self.current_project_id = active_projects[0]['id']
+                self.project_name.set(active_projects[0]['name'])
+        except Exception as e:
+            self.log_error(f"Failed to update project dropdown: {e}")
+
+    def on_project_selected(self, event=None):
+        """Handle project selection change"""
+        try:
+            selected = self.project_var.get()
+            if not selected:
+                return
+            
+            # Find the selected project
+            for project in self.projects:
+                project_name = f"{project['name']} ({project['status']}, Invoice: {project['invoice']})"
+                if project_name == selected:
+                    self.current_project_id = project['id']
+                    self.project_name.set(project['name'])
+                    break
+        except Exception as e:
+            self.log_error(f"Failed to handle project selection: {e}")
+
+    def update_projects_listbox(self):
+        """Update the projects listbox"""
+        try:
+            self.projects_listbox.delete(0, tk.END)
+            for project in self.projects:
+                status_icon = "🟢" if project.get('status') == 'Active' else "🔴"
+                invoice_icon = "💰" if project.get('invoice') == 'Yes' else "📝"
+                display_text = f"{status_icon} {project['name']} - {project['status']} - {invoice_icon} {project['invoice']}"
+                self.projects_listbox.insert(tk.END, display_text)
+        except Exception as e:
+            self.log_error(f"Failed to update projects listbox: {e}")
+
+    def update_rates_listbox(self):
+        """Update the rates listbox"""
+        try:
+            self.rates_listbox.delete(0, tk.END)
+            for project_id, rate_data in self.invoice_rates.items():
+                project = self.get_project_by_id(project_id)
+                project_name = project['name'] if project else project_id
+                display_text = f"{project_name}: {rate_data['rate']} {rate_data['currency']}/hour"
+                self.rates_listbox.insert(tk.END, display_text)
+        except Exception as e:
+            self.log_error(f"Failed to update rates listbox: {e}")
+
+    def get_selected_project(self):
+        """Get the selected project from listbox"""
+        try:
+            selection = self.projects_listbox.curselection()
+            if selection:
+                return self.projects[selection[0]]
+            return None
+        except Exception as e:
+            self.log_error(f"Failed to get selected project: {e}")
+            return None
+
+    def get_selected_rate(self):
+        """Get the selected rate from listbox"""
+        try:
+            selection = self.rates_listbox.curselection()
+            if selection:
+                project_ids = list(self.invoice_rates.keys())
+                if selection[0] < len(project_ids):
+                    return project_ids[selection[0]]
+            return None
+        except Exception as e:
+            self.log_error(f"Failed to get selected rate: {e}")
+            return None
+
+    def add_edit_project(self, project=None):
+        """Add or edit a project"""
+        # Create project dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("✏️ Add/Edit Project" if not project else "✏️ Edit Project")
+        dialog.geometry("500x600")
+        dialog.configure(bg=self.colors['bg_primary'])
+        
+        # Header
+        header_frame = tk.Frame(dialog, bg=self.colors['bg_primary'], pady=20)
+        header_frame.pack(fill="x")
+        
+        title = "✏️ Add New Project" if not project else "✏️ Edit Project"
+        tk.Label(
+            header_frame, 
+            text=title, 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['text_primary'], 
+            font=self.fonts['heading']
+        ).pack()
+
+        # Main content card
+        content_card = tk.Frame(dialog, bg=self.colors['bg_card'], relief='solid', bd=1)
+        content_card.pack(fill="both", expand=True, padx=25, pady=25)
+
+        form_frame = tk.Frame(content_card, bg=self.colors['bg_card'], padx=25, pady=25)
+        form_frame.pack(fill="both", expand=True)
+
+        # Project fields
+        fields = {}
+        
+        # Project Name
+        tk.Label(form_frame, text="Project Name *", bg=self.colors['bg_card'], fg=self.colors['text_secondary'], font=self.fonts['body']).pack(anchor="w", pady=(0, 5))
+        name_entry = tk.Entry(form_frame, width=50, font=self.fonts['body'], relief="solid", bd=2)
+        name_entry.pack(fill="x", pady=(0, 15))
+        fields['name'] = name_entry
+        
+        # Status
+        tk.Label(form_frame, text="Status", bg=self.colors['bg_card'], fg=self.colors['text_secondary'], font=self.fonts['body']).pack(anchor="w", pady=(0, 5))
+        status_var = tk.StringVar(value="Active")
+        status_combo = ttk.Combobox(form_frame, textvariable=status_var, values=["Active", "Inactive"], state="readonly", font=self.fonts['body'])
+        status_combo.pack(fill="x", pady=(0, 15))
+        fields['status'] = status_var
+        
+        # Invoice
+        tk.Label(form_frame, text="Invoice", bg=self.colors['bg_card'], fg=self.colors['text_secondary'], font=self.fonts['body']).pack(anchor="w", pady=(0, 5))
+        invoice_var = tk.StringVar(value="No")
+        invoice_combo = ttk.Combobox(form_frame, textvariable=invoice_var, values=["Yes", "No"], state="readonly", font=self.fonts['body'])
+        invoice_combo.pack(fill="x", pady=(0, 15))
+        fields['invoice'] = invoice_var
+        
+        # Description
+        tk.Label(form_frame, text="Description", bg=self.colors['bg_card'], fg=self.colors['text_secondary'], font=self.fonts['body']).pack(anchor="w", pady=(0, 5))
+        desc_text = tk.Text(form_frame, height=4, font=self.fonts['body'], relief="solid", bd=2, wrap=tk.WORD)
+        desc_text.pack(fill="x", pady=(0, 20))
+        fields['description'] = desc_text
+
+        # Pre-fill fields if editing
+        if project:
+            name_entry.insert(0, project.get('name', ''))
+            status_var.set(project.get('status', 'Active'))
+            invoice_var.set(project.get('invoice', 'No'))
+            desc_text.insert("1.0", project.get('description', ''))
+
+        # Buttons
+        button_frame = tk.Frame(form_frame, bg=self.colors['bg_card'])
+        button_frame.pack(side=tk.BOTTOM)
+        
+        self.create_modern_button(
+            button_frame,
+            "💾 Save",
+            lambda: self.save_project(fields, project, dialog),
+            bg_color=self.colors['secondary'],
+            hover_color=self.colors['secondary_hover'],
+            width=12
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.create_modern_button(
+            button_frame,
+            "❌ Cancel",
+            dialog.destroy,
+            bg_color=self.colors['danger'],
+            hover_color=self.colors['danger_hover'],
+            width=12
+        ).pack(side=tk.RIGHT)
+
+    def save_project(self, fields, project=None, dialog=None):
+        """Save project data"""
+        try:
+            name = fields['name'].get().strip()
+            if not name:
+                messagebox.showerror("Error", "Project name is required!")
+                return
+            
+            project_data = {
+                'id': project['id'] if project else f"project_{len(self.projects) + 1}",
+                'name': name,
+                'status': fields['status'].get(),
+                'invoice': fields['invoice'].get(),
+                'description': fields['description'].get("1.0", "end-1c").strip()
+            }
+            
+            if project:
+                # Update existing project
+                for i, p in enumerate(self.projects):
+                    if p['id'] == project['id']:
+                        self.projects[i] = project_data
+                        break
+            else:
+                # Add new project
+                self.projects.append(project_data)
+                
+                # Create default invoice rate
+                self.invoice_rates[project_data['id']] = {
+                    'rate': 50.0,
+                    'currency': 'USD'
+                }
+                self.save_invoice_rates()
+            
+            self.save_projects()
+            self.update_project_dropdown()
+            
+            if hasattr(self, 'projects_listbox'):
+                self.update_projects_listbox()
+            
+            if dialog:
+                dialog.destroy()
+                
+            messagebox.showinfo("Success", "Project saved successfully!")
+            
+        except Exception as e:
+            self.log_error(f"Failed to save project: {e}")
+            messagebox.showerror("Error", f"Failed to save project: {e}")
+
+    def delete_project(self):
+        """Delete selected project"""
+        try:
+            project = self.get_selected_project()
+            if not project:
+                messagebox.showwarning("Warning", "Please select a project to delete.")
+                return
+            
+            if project['id'] == 'default':
+                messagebox.showwarning("Warning", "Cannot delete the default project.")
+                return
+            
+            if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete project '{project['name']}'?"):
+                # Remove project
+                self.projects = [p for p in self.projects if p['id'] != project['id']]
+                
+                # Remove invoice rate
+                if project['id'] in self.invoice_rates:
+                    del self.invoice_rates[project['id']]
+                    self.save_invoice_rates()
+                
+                # Update current project if it was deleted
+                if self.current_project_id == project['id']:
+                    self.current_project_id = None
+                    self.project_name.set("")
+                
+                self.save_projects()
+                self.update_project_dropdown()
+                self.update_projects_listbox()
+                
+                messagebox.showinfo("Success", "Project deleted successfully!")
+                
+        except Exception as e:
+            self.log_error(f"Failed to delete project: {e}")
+            messagebox.showerror("Error", f"Failed to delete project: {e}")
+
+    def add_edit_rate(self, project_id=None):
+        """Add or edit invoice rate"""
+        # Create rate dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("💰 Add/Edit Invoice Rate" if not project_id else "💰 Edit Invoice Rate")
+        dialog.geometry("400x400")
+        dialog.configure(bg=self.colors['bg_primary'])
+        
+        # Header
+        header_frame = tk.Frame(dialog, bg=self.colors['bg_primary'], pady=20)
+        header_frame.pack(fill="x")
+        
+        title = "💰 Add New Invoice Rate" if not project_id else "💰 Edit Invoice Rate"
+        tk.Label(
+            header_frame, 
+            text=title, 
+            bg=self.colors['bg_primary'], 
+            fg=self.colors['text_primary'], 
+            font=self.fonts['heading']
+        ).pack()
+
+        # Main content card
+        content_card = tk.Frame(dialog, bg=self.colors['bg_card'], relief='solid', bd=1)
+        content_card.pack(fill="both", expand=True, padx=25, pady=25)
+
+        form_frame = tk.Frame(content_card, bg=self.colors['bg_card'], padx=25, pady=25)
+        form_frame.pack(fill="both", expand=True)
+
+        # Project selection (if adding new)
+        if not project_id:
+            tk.Label(form_frame, text="Project", bg=self.colors['bg_card'], fg=self.colors['text_secondary'], font=self.fonts['body']).pack(anchor="w", pady=(0, 5))
+            project_var = tk.StringVar()
+            project_combo = ttk.Combobox(form_frame, textvariable=project_var, state="readonly", font=self.fonts['body'])
+            project_combo['values'] = [p['name'] for p in self.projects]
+            project_combo.pack(fill="x", pady=(0, 15))
+            
+            if self.projects:
+                project_combo.set(self.projects[0]['name'])
+        else:
+            project_var = None
+
+        # Rate
+        tk.Label(form_frame, text="Hourly Rate *", bg=self.colors['bg_card'], fg=self.colors['text_secondary'], font=self.fonts['body']).pack(anchor="w", pady=(0, 5))
+        rate_entry = tk.Entry(form_frame, width=20, font=self.fonts['body'], relief="solid", bd=2)
+        rate_entry.pack(fill="x", pady=(0, 15))
+        
+        # Currency
+        tk.Label(form_frame, text="Currency", bg=self.colors['bg_card'], fg=self.colors['text_secondary'], font=self.fonts['body']).pack(anchor="w", pady=(0, 5))
+        currency_var = tk.StringVar(value="USD")
+        currency_combo = ttk.Combobox(form_frame, textvariable=currency_var, values=["USD", "EUR", "GBP", "SEK", "NOK", "DKK"], state="readonly", font=self.fonts['body'])
+        currency_combo.pack(fill="x", pady=(0, 20))
+
+        # Pre-fill fields if editing
+        if project_id:
+            rate_data = self.invoice_rates.get(project_id, {})
+            rate_entry.insert(0, str(rate_data.get('rate', 50.0)))
+            currency_var.set(rate_data.get('currency', 'USD'))
+
+        # Buttons
+        button_frame = tk.Frame(form_frame, bg=self.colors['bg_card'])
+        button_frame.pack(side=tk.BOTTOM)
+        
+        self.create_modern_button(
+            button_frame,
+            "💾 Save",
+            lambda: self.save_rate(project_var, rate_entry, currency_var, project_id, dialog),
+            bg_color=self.colors['secondary'],
+            hover_color=self.colors['secondary_hover'],
+            width=12
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.create_modern_button(
+            button_frame,
+            "❌ Cancel",
+            dialog.destroy,
+            bg_color=self.colors['danger'],
+            hover_color=self.colors['danger_hover'],
+            width=12
+        ).pack(side=tk.RIGHT)
+
+    def save_rate(self, project_var, rate_entry, currency_var, project_id=None, dialog=None):
+        """Save invoice rate data"""
+        try:
+            rate_str = rate_entry.get().strip()
+            if not rate_str:
+                messagebox.showerror("Error", "Rate is required!")
+                return
+            
+            try:
+                rate = float(rate_str)
+                if rate < 0:
+                    messagebox.showerror("Error", "Rate must be positive!")
+                    return
+            except ValueError:
+                messagebox.showerror("Error", "Rate must be a valid number!")
+                return
+            
+            currency = currency_var.get()
+            
+            if not project_id:
+                # Find project by name
+                project_name = project_var.get()
+                project = None
+                for p in self.projects:
+                    if p['name'] == project_name:
+                        project = p
+                        break
+                
+                if not project:
+                    messagebox.showerror("Error", "Please select a valid project!")
+                    return
+                
+                project_id = project['id']
+            
+            # Save rate
+            self.invoice_rates[project_id] = {
+                'rate': rate,
+                'currency': currency
+            }
+            
+            self.save_invoice_rates()
+            
+            if hasattr(self, 'rates_listbox'):
+                self.update_rates_listbox()
+            
+            if dialog:
+                dialog.destroy()
+                
+            messagebox.showinfo("Success", "Invoice rate saved successfully!")
+            
+        except Exception as e:
+            self.log_error(f"Failed to save invoice rate: {e}")
+            messagebox.showerror("Error", f"Failed to save invoice rate: {e}")
+
+    def delete_rate(self):
+        """Delete selected invoice rate"""
+        try:
+            project_id = self.get_selected_rate()
+            if not project_id:
+                messagebox.showwarning("Warning", "Please select a rate to delete.")
+                return
+            
+            project = self.get_project_by_id(project_id)
+            project_name = project['name'] if project else project_id
+            
+            if messagebox.askyesno("Confirm Delete", f"Are you sure you want to delete the invoice rate for '{project_name}'?"):
+                del self.invoice_rates[project_id]
+                self.save_invoice_rates()
+                self.update_rates_listbox()
+                messagebox.showinfo("Success", "Invoice rate deleted successfully!")
+                
+        except Exception as e:
+            self.log_error(f"Failed to delete invoice rate: {e}")
+            messagebox.showerror("Error", f"Failed to delete invoice rate: {e}")
+
+    def mark_as_invoiced(self):
+        """Mark selected time entries as invoiced"""
+        try:
+            # Get the current view_entries window
+            entries_window = None
+            for widget in self.root.winfo_children():
+                if isinstance(widget, tk.Toplevel) and widget.title() == "📋 View & Edit Entries":
+                    entries_window = widget
+                    break
+            else:
+                messagebox.showwarning("Warning", "Please open the View Entries window first.")
+                return
+            
+            # Find the listbox in the entries window
+            listbox = None
+            for widget in entries_window.winfo_children():
+                if isinstance(widget, tk.Frame):
+                    for child in widget.winfo_children():
+                        if isinstance(child, tk.Frame):
+                            for grandchild in child.winfo_children():
+                                if isinstance(grandchild, tk.Listbox):
+                                    listbox = grandchild
+                                    break
+            
+            if not listbox:
+                messagebox.showwarning("Warning", "Could not find entries list.")
+                return
+            
+            # Get selection
+            selection = listbox.curselection()
+            if not selection:
+                messagebox.showwarning("Warning", "Please select an entry to mark as invoiced.")
+                return
+            
+            # Load data and update
+            data = self.load_data()
+            updated_count = 0
+            
+            if len(selection) == 1:
+                # Single selection - toggle status
+                index = selection[0]
+                if index < len(data):
+                    entry = data[index]
+                    current_status = entry.get('invoiced', 'No')
+                    new_status = 'Yes' if current_status == 'No' else 'No'
+                    
+                    entry['invoiced'] = new_status
+                    updated_count = 1
+                    
+                    status_text = "invoiced" if new_status == 'Yes' else "not invoiced"
+                    self.update_status(f"Entry marked as {status_text}")
+            else:
+                # Multiple selection - mark all as invoiced
+                count = len(selection)
+                if messagebox.askyesno("Confirm Bulk Update", f"Mark all {count} selected entries as invoiced?"):
+                    for index in selection:
+                        if index < len(data):
+                            data[index]['invoiced'] = 'Yes'
+                            updated_count += 1
+                    
+                    self.update_status(f"{updated_count} entries marked as invoiced")
+                else:
+                    return
+            
+            if updated_count > 0:
+                # Save changes
+                self.save_data(data)
+                
+                # Refresh the listbox content with fresh data
+                # Find the listbox and refresh it directly
+                listbox.delete(0, tk.END)
+                fresh_data = self.load_data()
+                for i, entry in enumerate(fresh_data):
+                    proj = entry.get('project', '')
+                    st = entry.get('start_time', '')
+                    et = entry.get('stop_time', '')
+                    dur = entry.get('duration') or self.format_seconds(entry.get('duration_seconds', 0))
+                    memo_snippet = (entry.get('memo', '')[:30] + "…") if len(entry.get('memo', '')) > 30 else entry.get('memo', '')
+                    invoiced_status = entry.get('invoiced', 'No')
+                    invoiced_icon = "💰" if invoiced_status == "Yes" else "📝"
+                    listbox.insert(tk.END, f"{i+1}. {proj} | {st} - {et} | {dur} | {invoiced_icon} {invoiced_status} | 📝 {memo_snippet}")
+                
+                # Restore selection
+                for index in selection:
+                    if index < listbox.size():
+                        listbox.selection_set(index)
+                        listbox.see(index)
+                
+        except Exception as e:
+            self.log_error(f"Failed to mark as invoiced: {e}")
+            messagebox.showerror("Error", f"Failed to mark as invoiced: {e}")
+
+    def refresh_entries_listbox(self, listbox, data=None):
+        """Refresh the entries listbox with updated data"""
+        try:
+            # Always load fresh data from file to ensure consistency
+            if data is None:
+                data = self.load_data()
+            
+            # Clear current entries
+            listbox.delete(0, tk.END)
+            
+            def truncate(text, length=40):
+                text = text or ""
+                return (text[:length] + "…") if len(text) > length else text
+            
+            # Repopulate with updated data
+            for i, entry in enumerate(data):
+                proj = entry.get('project', '')
+                st = entry.get('start_time', '')
+                et = entry.get('stop_time', '')
+                dur = entry.get('duration') or self.format_seconds(entry.get('duration_seconds', 0))
+                memo_snippet = truncate(entry.get('memo', ''), 30)
+                invoiced_status = entry.get('invoiced', 'No')
+                invoiced_icon = "💰" if invoiced_status == "Yes" else "📝"
+                listbox.insert(tk.END, f"{i+1}. {proj} | {st} - {et} | {dur} | {invoiced_icon} {invoiced_status} | 📝 {memo_snippet}")
+                
+        except Exception as e:
+            self.log_error(f"Failed to refresh entries listbox: {e}")
+
+    def clear_date_filters(self, from_date_var, to_date_var):
+        """Clear date filters and refresh the listbox"""
+        from_date_var.set("")
+        to_date_var.set("")
+        # Re-apply filter to refresh the listbox
+        # This will be handled by the apply_filter function when called
+
+    def apply_reports_date_filter(self, data, from_date_var, to_date_var):
+        """Apply date filter to reports data"""
+        try:
+            from_date = from_date_var.get().strip()
+            to_date = to_date_var.get().strip()
+            
+            if from_date and to_date:
+                try:
+                    from_date_obj = datetime.strptime(from_date, "%Y-%m-%d").date()
+                    to_date_obj = datetime.strptime(to_date, "%Y-%m-%d").date()
+                    
+                    filtered_data = [entry for entry in data if from_date_obj <= datetime.strptime(entry.get('start_time', ''), "%Y-%m-%d").date() <= to_date_obj]
+                except ValueError:
+                    messagebox.showerror("Invalid Date Format", "Please enter dates in YYYY-MM-DD format")
+                    return
+            else:
+                filtered_data = data
+            
+            self.show_reports()
+        except Exception as e:
+            self.log_error(f"Failed to apply reports date filter: {e}")
+            messagebox.showerror("Error", f"Failed to apply reports date filter: {e}")
+
+    def clear_reports_date_filters(self, from_date_var, to_date_var):
+        """Clear date filters for reports"""
+        from_date_var.set("")
+        to_date_var.set("")
 
 if __name__ == "__main__":
     root = tk.Tk()

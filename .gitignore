@@ -117,6 +117,8 @@ dmypy.json
 config.json
 work_hours.json
 backups/
+projects.json
+invoice_rates.json
 *.exe
 *.zip
 
