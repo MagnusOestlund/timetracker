@@ -1278,12 +1278,12 @@ class TimeTrackerApp:
         listbox.pack(side=tk.LEFT, fill="both", expand=True)
         
         # Create scrollbar after listbox
-        scrollbar = tk.Scrollbar(list_frame, bg=self.colors['bg_secondary'])
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        entries_scrollbar = tk.Scrollbar(list_frame, bg=self.colors['bg_secondary'])
+        entries_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
         # Configure scrollbar and listbox
-        listbox.config(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=listbox.yview)
+        listbox.config(yscrollcommand=entries_scrollbar.set)
+        entries_scrollbar.config(command=listbox.yview)
 
         # Store filtered data and mapping for operations
         filtered_data = []
@@ -1835,7 +1835,7 @@ class TimeTrackerApp:
         # Bind mousewheel to summary canvas
         def _on_summary_mousewheel(event):
             try:
-                if summary_canvas and summary_canvas.winfo_exists():
+                if summary_canvas and summary_canvas.winfo_exists() and summary_canvas.winfo_manager():
                     summary_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
@@ -1912,7 +1912,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         # Bind mousewheel to weekly canvas
         def _on_weekly_mousewheel(event):
             try:
-                if weekly_canvas and weekly_canvas.winfo_exists():
+                if weekly_canvas and weekly_canvas.winfo_exists() and weekly_canvas.winfo_manager():
                     weekly_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
@@ -1974,7 +1974,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         # Bind mousewheel to invoicing canvas
         def _on_invoicing_mousewheel(event):
             try:
-                if invoicing_canvas and invoicing_canvas.winfo_exists():
+                if invoicing_canvas and invoicing_canvas.winfo_exists() and invoicing_canvas.winfo_manager():
                     invoicing_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
