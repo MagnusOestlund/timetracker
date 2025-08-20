@@ -322,6 +322,9 @@ class TimeTrackerApp:
         self.root.geometry("900x800")
         self.root.configure(bg="#FAFBFC")
         
+        # Window management - track open dialogs and prevent multiple instances
+        self.open_dialogs = {}
+        
         # Modern color palette
         self.colors = {
             'bg_primary': '#FAFBFC',
@@ -1123,11 +1126,8 @@ class TimeTrackerApp:
                             f"Duration: {duration_str}")
 
     def view_entries(self):
-        entries_window = tk.Toplevel(self.root)
-        entries_window.title("📋 View & Edit Entries")
-        entries_window.geometry("850x750")
-        entries_window.configure(bg=self.colors['bg_primary'])
-
+        entries_window = self.create_dialog("view_entries", "📋 View & Edit Entries", "850x750")
+        
         # Load data
         data = self.load_data()
 
@@ -1699,11 +1699,8 @@ class TimeTrackerApp:
 
     def show_reports(self):
         """Show time tracking reports and analytics"""
-        reports_window = tk.Toplevel(self.root)
-        reports_window.title("📊 Time Tracking Reports")
-        reports_window.geometry("750x550")
-        reports_window.configure(bg=self.colors['bg_primary'])
-
+        reports_window = self.create_dialog("reports", "📊 Time Tracking Reports", "750x550")
+        
         # Load data
         data = self.load_data()
         
@@ -2055,11 +2052,8 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
 
     def import_export_dialog(self):
         """Show import/export options dialog"""
-        dialog = tk.Toplevel(self.root)
-        dialog.title("📁 Data Management")
-        dialog.geometry("450x400")
-        dialog.configure(bg=self.colors['bg_primary'])
-
+        dialog = self.create_dialog("data_management", "📁 Data Management", "450x400")
+        
         # Header
         header_frame = tk.Frame(dialog, bg=self.colors['bg_primary'], pady=25)
         header_frame.pack(fill="x")
@@ -2244,10 +2238,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
                 return
             
             # Create backup selection dialog
-            backup_dialog = tk.Toplevel(self.root)
-            backup_dialog.title("🔄 Restore from Backup")
-            backup_dialog.geometry("550x450")
-            backup_dialog.configure(bg=self.colors['bg_primary'])
+            backup_dialog = self.create_dialog("backup_restore", "🔄 Restore from Backup", "550x450")
             
             # Header
             header_frame = tk.Frame(backup_dialog, bg=self.colors['bg_primary'], pady=20)
@@ -2277,13 +2268,14 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             list_frame = tk.Frame(content_card, bg=self.colors['bg_card'])
             list_frame.pack(pady=20, padx=20, fill="both", expand=True)
             
-            scrollbar = tk.Scrollbar(list_frame)
-            scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+            # Listbox with scrollbar
+            backup_scrollbar = tk.Scrollbar(list_frame)
+            backup_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
             
             backup_listbox = tk.Listbox(
                 list_frame, 
                 font=self.fonts['body'], 
-                yscrollcommand=scrollbar.set,
+                yscrollcommand=backup_scrollbar.set,
                 bg=self.colors['bg_card'],
                 fg=self.colors['text_primary'],
                 selectbackground=self.colors['primary'],
@@ -2293,7 +2285,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
                 highlightthickness=0
             )
             backup_listbox.pack(side=tk.LEFT, fill="both", expand=True)
-            scrollbar.config(command=backup_listbox.yview)
+            backup_scrollbar.config(command=backup_listbox.yview)
             
             # Populate backup list
             for backup_file in sorted(backup_files, reverse=True):
@@ -2347,10 +2339,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
 
     def show_settings(self):
         """Show the settings dialog"""
-        settings_window = tk.Toplevel(self.root)
-        settings_window.title("⚙️ Settings")
-        settings_window.geometry("500x400")
-        settings_window.configure(bg=self.colors['bg_primary'])
+        settings_window = self.create_dialog("settings", "⚙️ Settings", "500x400")
         
         # Header
         header_frame = tk.Frame(settings_window, bg=self.colors['bg_primary'], pady=20)
@@ -2441,10 +2430,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
 
     def show_about(self):
         """Show the about dialog"""
-        about_window = tk.Toplevel(self.root)
-        about_window.title("📖 About TimeTracker Pro")
-        about_window.geometry("450x350")
-        about_window.configure(bg=self.colors['bg_primary'])
+        about_window = self.create_dialog("about", "📖 About TimeTracker Pro", "450x350")
         
         # Header
         header_frame = tk.Frame(about_window, bg=self.colors['bg_primary'], pady=20)
@@ -2529,10 +2515,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
 
     def show_project_manager(self):
         """Show the project management dialog"""
-        project_window = tk.Toplevel(self.root)
-        project_window.title("📋 Project Management")
-        project_window.geometry("700x500")
-        project_window.configure(bg=self.colors['bg_primary'])
+        project_window = self.create_dialog("project_manager", "📋 Project Management", "700x500")
         
         # Header
         header_frame = tk.Frame(project_window, bg=self.colors['bg_primary'], pady=20)
@@ -2555,13 +2538,13 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         list_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
         # Listbox with scrollbar
-        scrollbar = tk.Scrollbar(list_frame)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        projects_scrollbar = tk.Scrollbar(list_frame)
+        projects_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.projects_listbox = tk.Listbox(
             list_frame,
             font=self.fonts['body'],
-            yscrollcommand=scrollbar.set,
+            yscrollcommand=projects_scrollbar.set,
             bg=self.colors['bg_card'],
             fg=self.colors['text_primary'],
             selectbackground=self.colors['primary'],
@@ -2571,7 +2554,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             highlightthickness=0
         )
         self.projects_listbox.pack(side=tk.LEFT, fill="both", expand=True)
-        scrollbar.config(command=self.projects_listbox.yview)
+        projects_scrollbar.config(command=self.projects_listbox.yview)
 
         # Update projects list
         self.update_projects_listbox()
@@ -2618,10 +2601,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
 
     def show_invoice_rates(self):
         """Show the invoice rates dialog"""
-        rates_window = tk.Toplevel(self.root)
-        rates_window.title("💰 Invoice Rates")
-        rates_window.geometry("600x500")
-        rates_window.configure(bg=self.colors['bg_primary'])
+        rates_window = self.create_dialog("invoice_rates", "💰 Invoice Rates", "600x500")
         
         # Header
         header_frame = tk.Frame(rates_window, bg=self.colors['bg_primary'], pady=20)
@@ -2644,13 +2624,13 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         list_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
         # Listbox with scrollbar
-        scrollbar = tk.Scrollbar(list_frame)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        rates_scrollbar = tk.Scrollbar(list_frame)
+        rates_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         self.rates_listbox = tk.Listbox(
             list_frame,
             font=self.fonts['body'],
-            yscrollcommand=scrollbar.set,
+            yscrollcommand=rates_scrollbar.set,
             bg=self.colors['bg_card'],
             fg=self.colors['text_primary'],
             selectbackground=self.colors['primary'],
@@ -2660,7 +2640,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
             highlightthickness=0
         )
         self.rates_listbox.pack(side=tk.LEFT, fill="both", expand=True)
-        scrollbar.config(command=self.rates_listbox.yview)
+        rates_scrollbar.config(command=self.rates_listbox.yview)
 
         # Update rates list
         self.update_rates_listbox()
@@ -2819,10 +2799,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
     def add_edit_project(self, project=None):
         """Add or edit a project"""
         # Create project dialog
-        dialog = tk.Toplevel(self.root)
-        dialog.title("✏️ Add/Edit Project" if not project else "✏️ Edit Project")
-        dialog.geometry("500x600")
-        dialog.configure(bg=self.colors['bg_primary'])
+        dialog = self.create_dialog("add_edit_project", "✏️ Add/Edit Project" if not project else "✏️ Edit Project", "500x600")
         
         # Header
         header_frame = tk.Frame(dialog, bg=self.colors['bg_primary'], pady=20)
@@ -2989,10 +2966,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
     def add_edit_rate(self, project_id=None):
         """Add or edit invoice rate"""
         # Create rate dialog
-        dialog = tk.Toplevel(self.root)
-        dialog.title("💰 Add/Edit Invoice Rate" if not project_id else "💰 Edit Invoice Rate")
-        dialog.geometry("400x400")
-        dialog.configure(bg=self.colors['bg_primary'])
+        dialog = self.create_dialog("add_edit_rate", "💰 Add/Edit Invoice Rate" if not project_id else "💰 Edit Invoice Rate", "400x400")
         
         # Header
         header_frame = tk.Frame(dialog, bg=self.colors['bg_primary'], pady=20)
@@ -3319,10 +3293,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         """Show reports with filtered data"""
         try:
             # Create a new reports window with filtered data
-            reports_window = tk.Toplevel(self.root)
-            reports_window.title(f"📊 Time Tracking Reports (Filtered: {from_date} to {to_date})")
-            reports_window.geometry("750x550")
-            reports_window.configure(bg=self.colors['bg_primary'])
+            reports_window = self.create_dialog("filtered_reports", f"📊 Time Tracking Reports (Filtered: {from_date} to {to_date})", "750x550")
             
             if not filtered_data:
                 # No filtered data message
@@ -3444,9 +3415,3 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         """Clear date filters for reports"""
         from_date_var.set("")
         to_date_var.set("")
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = TimeTrackerApp(root)
-    root.mainloop()
-
