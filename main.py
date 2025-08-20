@@ -3415,3 +3415,54 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
         """Clear date filters for reports"""
         from_date_var.set("")
         to_date_var.set("")
+
+    def create_dialog(self, dialog_type, title, geometry, modal=True):
+        """Create a properly positioned dialog with single instance enforcement"""
+        # Check if dialog is already open
+        if dialog_type in self.open_dialogs and self.open_dialogs[dialog_type].winfo_exists():
+            # Bring existing dialog to front
+            self.open_dialogs[dialog_type].lift()
+            self.open_dialogs[dialog_type].focus_force()
+            return self.open_dialogs[dialog_type]
+        
+        # Create new dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title(title)
+        dialog.geometry(geometry)
+        dialog.configure(bg=self.colors['bg_primary'])
+        
+        # Position dialog relative to main window
+        self.root.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (int(geometry.split('x')[0]) // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (int(geometry.split('x')[1]) // 2)
+        dialog.geometry(f"+{x}+{y}")
+        
+        # Make dialog modal if requested
+        if modal:
+            dialog.transient(self.root)
+            dialog.grab_set()
+            dialog.focus_force()
+        
+        # Track the dialog
+        self.open_dialogs[dialog_type] = dialog
+        
+        # Handle dialog close
+        def on_dialog_close():
+            if dialog_type in self.open_dialogs:
+                del self.open_dialogs[dialog_type]
+            dialog.destroy()
+        
+        dialog.protocol("WM_DELETE_WINDOW", on_dialog_close)
+        
+        return dialog
+
+    def close_dialog(self, dialog_type):
+        """Close a specific dialog if it's open"""
+        if dialog_type in self.open_dialogs and self.open_dialogs[dialog_type].winfo_exists():
+            self.open_dialogs[dialog_type].destroy()
+            del self.open_dialogs[dialog_type]
+
+    def close_all_dialogs(self):
+        """Close all open dialogs"""
+        for dialog_type in list(self.open_dialogs.keys()):
+            self.close_dialog(dialog_type)
