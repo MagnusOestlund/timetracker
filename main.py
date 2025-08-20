@@ -423,8 +423,12 @@ class TimeTrackerApp:
 
         # Bind mousewheel to canvas
         def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+            try:
+                if canvas and canvas.winfo_exists():
+                    canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            except:
+                pass
+        canvas.bind("<MouseWheel>", _on_mousewheel)
 
         # Title section
         title_frame = tk.Frame(main_frame, bg=self.colors['bg_primary'])
@@ -1836,7 +1840,7 @@ class TimeTrackerApp:
                     summary_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
-        summary_canvas.bind_all("<MouseWheel>", _on_summary_mousewheel)
+        summary_canvas.bind("<MouseWheel>", _on_summary_mousewheel)
 
         # Calculate summary statistics
         total_entries = len(data)
@@ -1913,7 +1917,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
                     weekly_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
-        weekly_canvas.bind_all("<MouseWheel>", _on_weekly_mousewheel)
+        weekly_canvas.bind("<MouseWheel>", _on_weekly_mousewheel)
 
         # Calculate weekly totals for last 4 weeks
         weekly_text = "📅 WEEKLY BREAKDOWN (Last 4 weeks):\n\n"
@@ -1975,7 +1979,7 @@ Total Time: {self.format_seconds(total_seconds)} ({total_hours:.2f} hours)
                     invoicing_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
             except:
                 pass
-        invoicing_canvas.bind_all("<MouseWheel>", _on_invoicing_mousewheel)
+        invoicing_canvas.bind("<MouseWheel>", _on_invoicing_mousewheel)
 
         # Calculate invoicing statistics
         invoiced_entries = [entry for entry in data if entry.get('invoiced') == 'Yes']
