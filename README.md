@@ -1,5 +1,7 @@
 # ⏱️ TimeTracker Pro
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A professional time tracking application built with Python and Tkinter, designed for freelancers, consultants, and professionals who need to track time spent on projects and generate detailed reports.
 
 ## 🚀 Features
